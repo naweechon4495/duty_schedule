@@ -1,0 +1,14 @@
+# Cloudflare / Wrangler
+.wrangler/
+# wrangler.toml เก็บไว้เฉพาะเครื่อง (มี APPS_SCRIPT_URL จริง) — ใช้ wrangler.toml.example เป็นต้นแบบ
+wrangler.toml
+
+# Local tooling / editor
+.claude/
+node_modules/
+npm-debug.log*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

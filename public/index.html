@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบจัดเวรพยาบาล - โรงพยาบาลลำพูน</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#0d9488;--primary-dark:#0f766e;--primary-darker:#115e59;
+  --primary-light:#effcf9;--primary-tint:#ccfbf1;
+  --success:#16a34a;--success-dark:#15803d;
+  --warning:#e08e0b;--warning-dark:#b5730a;
+  --danger:#e11d48;--danger-dark:#be123c;
+  --ink:#132a2e;--ink-soft:#556570;--ink-mute:#93a3ab;
+  --line:#e4ece9;--line-strong:#cddedb;
+  --surface:#ffffff;--bg:#eef5f3;
+  --radius-sm:10px;--radius-md:16px;--radius-lg:22px;
+  --focus:rgba(13,148,136,.16);
+  --shadow-sm:0 1px 2px rgba(13,60,53,.05),0 2px 6px rgba(13,60,53,.04);
+  --shadow-md:0 10px 28px rgba(13,60,53,.09);
+  --shadow-lg:0 22px 50px rgba(13,60,53,.18);
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+*,button,input,select,textarea{font-family:'Sarabun','Segoe UI',sans-serif}
+html{-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(1200px 600px at 100% -10%,#e2f5f1 0%,rgba(226,245,241,0) 55%),var(--bg);min-height:100vh;color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
+::selection{background:var(--primary-tint);color:var(--primary-darker)}
+.header{background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%);color:#fff;padding:18px 24px;box-shadow:var(--shadow-md);position:relative}
+.header h1{font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px;letter-spacing:.1px}
+.header .sub{font-size:12px;opacity:.82;margin-top:5px;font-weight:500}
+.user-info{position:absolute;right:24px;top:50%;transform:translateY(-50%);color:#fff;font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.user-info .badge-role{background:rgba(255,255,255,.2);padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;backdrop-filter:blur(4px)}
+.tabs{display:flex;gap:4px;background:var(--surface);padding:9px 14px;overflow-x:auto;overflow-y:hidden;box-shadow:var(--shadow-sm);border-bottom:1px solid var(--line);scrollbar-width:thin}
+.tab{padding:9px 15px;cursor:pointer;border:none;background:none;font-size:12.5px;font-weight:600;color:var(--ink-mute);border-radius:999px;white-space:nowrap;transition:all .15s var(--ease)}
+.tab:hover{color:var(--primary-dark);background:var(--primary-light)}
+.tab.active{color:#fff;background:var(--primary);box-shadow:0 4px 12px rgba(13,148,136,.32)}
+.tab.hidden{display:none}
+.container{padding:18px 16px;max-width:1400px;margin:0 auto}
+.panel{display:none;animation:fadeIn .22s var(--ease)}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--surface);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-sm);border:1px solid var(--line);margin-bottom:16px}
+.card h2{color:var(--ink);margin-bottom:15px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.btn{padding:9px 15px;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;touch-action:manipulation;transition:transform .1s var(--ease),box-shadow .15s var(--ease),background .15s var(--ease);box-shadow:var(--shadow-sm)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 7px 16px rgba(13,60,53,.14)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:var(--success-dark)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:var(--danger-dark)}
+.btn-warning{background:var(--warning);color:#fff}.btn-warning:hover{background:var(--warning-dark)}
+.btn-secondary{background:#e9f0ee;color:var(--ink-soft)}.btn-secondary:hover{background:#dde8e5;color:var(--ink)}
+.btn-sm{padding:6px 11px;font-size:11.5px}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:#f2f8f6;padding:11px 10px;text-align:left;font-weight:700;color:var(--ink-soft);border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child{border-top-left-radius:var(--radius-sm)}th:last-child{border-top-right-radius:var(--radius-sm)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:var(--primary-light)}
+tbody tr:nth-child(even){background:#fafcfb}
+tbody tr:nth-child(even):hover{background:var(--primary-light)}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;letter-spacing:.1px}
+.badge-gen1{background:var(--primary-tint);color:var(--primary-darker)}.badge-gen2{background:#dcfce7;color:#166534}
+.badge-gen3{background:#fef3c7;color:#92400e}.badge-gen4{background:#fce7f3;color:#9f1239}
+.badge-morning{background:#fef3c7;color:#92400e}.badge-afternoon{background:#dbeafe;color:#1e40af}
+.badge-night{background:#293548;color:#fff}.badge-preop{background:#e6e2ff;color:#4338ca}
+.badge-role-admin{background:#fde3ea;color:#be123c}.badge-role-approver{background:#fef0d6;color:#b5730a}
+.badge-role-requester{background:var(--primary-tint);color:var(--primary-darker)}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,38,35,.5);backdrop-filter:blur(3px);z-index:1000;align-items:center;justify-content:center;padding:14px}
+.modal.show{display:flex!important;animation:modalIn .18s var(--ease)}
+@keyframes modalIn{from{opacity:0}to{opacity:1}}
+.modal-content{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:modalPop .2s var(--ease)}
+@keyframes modalPop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-content h3{color:var(--ink);margin-bottom:16px;font-size:17px;font-weight:700}
+.modal-section{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.modal-section:first-of-type{border-top:none;margin-top:0;padding-top:0}
+.modal-section-title{font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:9px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.4px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:var(--radius-sm);font-size:13.5px;font-family:inherit;color:var(--ink);transition:border-color .15s,box-shadow .15s;background:var(--surface)}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3.5px var(--focus)}
+.checkbox-group{display:flex;flex-wrap:wrap;gap:6px}
+.checkbox-group label{display:flex;align-items:center;gap:5px;padding:6px 11px;background:#eef4f2;border-radius:20px;cursor:pointer;font-size:11.5px;font-weight:500;transition:background .12s}
+.checkbox-group label:hover{background:var(--primary-tint)}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-header{background:var(--primary-dark);color:#fff;padding:8px 3px;text-align:center;font-weight:700;font-size:11px;border-radius:8px}
+.cal-header.sun{background:var(--danger)}
+.cal-day{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px;min-height:100px;cursor:pointer;font-size:9px;transition:box-shadow .12s,border-color .12s,transform .12s}
+.cal-day:hover{border-color:var(--primary);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.cal-day.empty{background:#f4f7f6;cursor:default;border-color:transparent}
+.cal-day.empty:hover{box-shadow:none;transform:none}
+.cal-day.weekend{background:#fef4f6}
+.cal-day.holiday{background:#fffaf0}
+.cal-day.today{border:2px solid var(--primary);box-shadow:0 0 0 3px var(--focus)}
+.cal-day .date-num{font-weight:700;font-size:12px;color:var(--ink);margin-bottom:2px}
+.cal-day.today .date-num{color:var(--primary-dark)}
+.cal-day .shift-info{margin-top:1px;line-height:1.3}
+.cal-day .shift-label{font-weight:700;color:var(--ink-soft);font-size:8px}
+.cal-day .nurse-name{color:var(--primary-dark);font-size:8px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px}
+.stat-card{background:var(--surface);border-radius:var(--radius-md);padding:14px;border:1px solid var(--line);border-left:4px solid var(--primary);transition:box-shadow .15s,transform .15s}
+.stat-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.stat-card .name{font-weight:700;color:var(--ink);margin-bottom:3px;font-size:12.5px}
+.stat-card .details{font-size:10.5px;color:var(--ink-soft);line-height:1.6}
+.stat-card .total{font-size:22px;font-weight:800;color:var(--primary-dark);margin-top:5px}
+.swap-card{background:#fffaf0;border-left:4px solid var(--warning);padding:14px;border-radius:var(--radius-md);margin-bottom:10px;transition:box-shadow .15s}
+.swap-card:hover{box-shadow:var(--shadow-sm)}
+.swap-card.approved{background:#f1fbf4;border-left-color:var(--success)}
+.swap-card.rejected{background:#fdf2f5;border-left-color:var(--danger)}
+.alert{padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:12.5px;line-height:1.55}
+.alert-info{background:var(--primary-light);color:var(--primary-darker);border-left:3px solid var(--primary)}
+.alert-warn{background:#fef3c7;color:#92400e;border-left:3px solid var(--warning)}
+.alert-success{background:#dcfce7;color:#166534;border-left:3px solid var(--success)}
+.search-input{padding:9px 12px;border:1.5px solid var(--line-strong);border-radius:var(--radius-sm);font-size:12.5px;min-width:120px;font-family:inherit;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3.5px var(--focus)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}.calendar{font-size:8px}.cal-day{min-height:80px;padding:4px}.header{padding:16px}.header h1{font-size:16px}table{font-size:11px}th,td{padding:8px 7px}.user-info{position:static;transform:none;margin-top:10px}}
+@media(max-width:480px){
+.modal-content{padding:16px}
+.login-container{margin:20px auto;width:calc(100% - 24px)}
+.cal-day{min-height:60px;padding:3px}
+.calendar{font-size:7px}
+.cal-day .date-num{font-size:10px}
+.tabs{padding:8px 6px}
+.tab{padding:8px 12px;font-size:11px}
+.stats-grid{grid-template-columns:1fr}
+.toolbar{gap:6px}
+}
+.tag-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{background:#fde3ea;color:#a1173a;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag .remove:hover{opacity:1}
+.tag-shift{background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-shift .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-week{background:#dbeafe;color:#1e40af;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-week .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-month{background:#dcfce7;color:#166534;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-month .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-shift-week{background:#e6e2ff;color:#4338ca;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-shift-week .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-shift-month{background:#fce7f3;color:#9f1239;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-shift-month .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-holiday{background:var(--primary-tint);color:var(--primary-darker);padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.tag-holiday .remove{cursor:pointer;font-weight:700;opacity:.7}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:10.5px}
+.legend-item{display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-weight:500}
+.legend-box{width:11px;height:11px;border-radius:3px}
+.bulk-edit-row{display:flex;align-items:center;gap:8px;padding:9px;background:#f4f8f6;border-radius:var(--radius-sm);margin-bottom:6px;transition:background .12s}
+.bulk-edit-row:hover{background:var(--primary-light)}
+.select-all{padding:9px;background:var(--primary-light);border-radius:var(--radius-sm);margin-bottom:10px;font-weight:600;font-size:12.5px;color:var(--primary-darker)}
+.login-container{max-width:420px;margin:56px auto;background:var(--surface);padding:36px 32px;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);border:1px solid var(--line)}
+.login-container h2{color:var(--ink);margin-bottom:18px;text-align:center;font-size:21px;font-weight:700;line-height:1.4}
+.login-container .form-group{margin-bottom:15px}
+.login-container .btn{width:100%;justify-content:center;padding:13px;font-size:14px}
+.login-logo{width:78px;height:78px;margin:0 auto 14px;border-radius:50%;background:var(--primary-light);border:1.5px solid var(--primary-tint);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:inset 0 2px 8px rgba(13,148,136,.08)}
+
+.toast-container{position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:13px 15px;display:flex;align-items:flex-start;gap:10px;font-size:12.5px;font-weight:500;color:var(--ink);border-left:4px solid var(--primary);animation:toastIn .22s var(--ease)}
+.toast.success{border-left-color:var(--success)}
+.toast.error{border-left-color:var(--danger)}
+.toast.warn{border-left-color:var(--warning)}
+.toast.hide{animation:toastOut .18s var(--ease) forwards}
+.toast .icon{font-size:16px;line-height:1;flex-shrink:0}
+.toast .msg{flex:1;line-height:1.5;white-space:pre-line}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(24px)}}
+@media(max-width:480px){.toast-container{left:12px;right:12px;top:12px;max-width:none}}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="login-container">
+    <div class="login-logo">🏥</div>
+    <h2>ระบบจัดเวรพยาบาล<br>โรงพยาบาลลำพูน</h2>
+    <div class="alert alert-info" style="font-size:11px">กรุณาเข้าสู่ระบบเพื่อใช้งาน</div>
+    <div id="loginNotice"></div>
+    <div class="form-group">
+      <label>👤 ชื่อผู้ใช้</label>
+      <input type="text" id="loginUsername" placeholder="กรอกชื่อผู้ใช้">
+    </div>
+    <div class="form-group">
+      <label>🔒 รหัสผ่าน</label>
+      <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
+    <div style="text-align:center;color:#94a3b8;font-size:11px;margin:12px 0">หรือ</div>
+    <button class="btn" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#06C755;color:#fff" onclick="location.href='/auth/line/login'">💬 เข้าสู่ระบบด้วย LINE</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <div class="header">
+    <h1>🏥 ระบบจัดเวรพยาบาล โรงพยาบาลลำพูน</h1>
+    <div class="sub">Lamphun Hospital Nurse Scheduling System | <span id="currentDate"></span></div>
+    <div class="user-info">
+      <span id="currentUserDisplay"></span>
+      <span class="badge-role" id="currentRoleDisplay"></span>
+      <button class="btn btn-sm" style="background:#06C755;color:#fff" onclick="linkLineAccount()">💬 เชื่อมบัญชี LINE</button>
+      <button class="btn btn-sm btn-secondary" onclick="doLogout()">🚪 ออก</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPanel('nurses',this)" id="tab-nurses">👩‍⚕️ พยาบาล</button>
+    <button class="tab" onclick="showPanel('calendar',this)" id="tab-calendar">📅 ปฏิทิน</button>
+    <button class="tab" onclick="showPanel('schedule',this)" id="tab-schedule">⚙️ จัดเวร</button>
+    <button class="tab" onclick="showPanel('holidays',this)" id="tab-holidays">🎌 วันหยุด</button>
+    <button class="tab" onclick="showPanel('swap',this)" id="tab-swap">🔄 แลกเวร</button>
+    <button class="tab" onclick="showPanel('stats',this)" id="tab-stats">📊 สถิติ</button>
+    <button class="tab" onclick="showPanel('settings',this)" id="tab-settings">⚡ ตั้งค่า</button>
+    <button class="tab" onclick="showPanel('users',this)" id="tab-users">👥 ผู้ใช้</button>
+  </div>
+
+  <div class="container">
+
+    <div id="panel-nurses" class="panel active">
+      <div class="card">
+        <h2>👩‍⚕️ จัดการข้อมูลพยาบาล</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openNurseModal()">➕ เพิ่ม</button>
+          <button class="btn btn-warning" onclick="openBulkEditModal()">✏️ แก้ไขหลายรายการ</button>
+          <button class="btn btn-success" onclick="document.getElementById('excelImport').click()">📥 Import Excel</button>
+          <input type="file" id="excelImport" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(event)">
+          <button class="btn btn-secondary" onclick="exportNursesExcel()">📤 Export Excel</button>
+          <input type="text" class="search-input" id="searchNurse" placeholder="🔍 ค้นหา..." oninput="renderNurses()">
+          <select class="search-input" id="filterGen" onchange="renderNurses()">
+            <option value="">ทุกรุ่น</option>
+            <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
+            <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (Pre-op)</option>
+          </select>
+          <span style="margin-left:auto;color:#64748b;font-size:12px" id="nurseCount"></span>
+        </div>
+        <div class="alert alert-info">💡 <strong>วันหยุด:</strong> Pre-op เช้า 1 คน + Pre-op บ่าย 1 คน (รุ่น 4) | <strong>วันธรรมดา:</strong> Pre-op 1 คน</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+              <th>รหัส</th><th>ชื่อ-นามสกุล</th><th>รุ่น</th><th>เบอร์โทร</th><th>วัน/กะที่ไม่สะดวก</th><th>จัดการ</th>
+            </tr></thead>
+            <tbody id="nurseTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-calendar" class="panel">
+      <div class="card">
+        <h2>📅 ปฏิทินเวรประจำเดือน</h2>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="changeMonth(-1)">◀</button>
+          <input type="month" id="monthPicker" onchange="renderCalendar()">
+          <button class="btn btn-secondary" onclick="changeMonth(1)">▶</button>
+          <button class="btn btn-success" onclick="exportPDF()">📄 PDF</button>
+          <button class="btn btn-warning" onclick="exportCSV()">📊 CSV</button>
+          <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="monthTitle"></span>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> กะเช้า (วันหยุด)</div>
+          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
+          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
+          <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
+          <div class="legend-item"><div class="legend-box" style="background:#fee2e2"></div> วันหยุด</div>
+        </div>
+        <div class="calendar" id="calendar"></div>
+      </div>
+    </div>
+
+    <div id="panel-schedule" class="panel">
+      <div class="card">
+        <h2>⚙️ จัดเวรอัตโนมัติ</h2>
+        <div class="alert alert-info">
+          📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
+          • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • แต่ละทีมประกอบด้วยพยาบาลคนละรุ่น (ไม่ซ้ำรุ่น) • พยาบาลรุ่น 4 จะถูกจัดเข้า Pre-op
+        </div>
+        <div class="toolbar">
+          <label>เดือน:</label>
+          <input type="month" id="scheduleMonth">
+          <button class="btn btn-success" onclick="autoSchedule()">🤖 จัดเวรอัตโนมัติ</button>
+          <button class="btn btn-danger" onclick="clearSchedule()">🗑️ ล้างเวร</button>
+        </div>
+        <div id="scheduleResult"></div>
+      </div>
+    </div>
+
+    <div id="panel-holidays" class="panel">
+      <div class="card">
+        <h2>🎌 จัดการวันหยุดพิเศษ</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openHolidayModal()">➕ เพิ่มวันหยุด</button>
+          <select class="search-input" id="filterHolidayYear" onchange="renderHolidays()">
+            <option value="2025">ปี 2568 (2025)</option>
+            <option value="2026">ปี 2569 (2026)</option>
+            <option value="2027">ปี 2570 (2027)</option>
+          </select>
+        </div>
+        <div class="alert alert-info">💡 วันหยุดที่เพิ่มจะถูกรวมกับวันหยุดนักขัตฤกษ์ที่มีอยู่แล้ว</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>วันที่</th><th>วัน</th><th>ชื่อ</th><th>จัดการ</th></tr></thead>
+            <tbody id="holidayTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📋 วันหยุดนักขัตฤกษ์ (มีอยู่แล้ว)</h2>
+        <div class="alert alert-warn">⚠️ รายการนี้เป็นวันหยุดราชการที่มีอยู่แล้วในระบบ ไม่สามารถลบได้</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>วันที่</th><th>วันในสัปดาห์</th></tr></thead>
+            <tbody id="officialHolidayTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-swap" class="panel">
+      <div class="card">
+        <h2>🔄 ระบบขอแลกเวร</h2>
+        <div id="swapActions"></div>
+        <div id="swapList" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <div id="panel-stats" class="panel">
+      <div class="card">
+        <h2>📊 สถิติการเข้าเวร</h2>
+        <div class="toolbar">
+          <label>เดือน:</label>
+          <input type="month" id="statsMonth" onchange="renderStats()">
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+    </div>
+
+    <div id="panel-settings" class="panel">
+      <div class="card">
+        <h2>⚡ ตั้งค่าระบบ</h2>
+        <div class="grid-2">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">💾 จัดการข้อมูล</h3>
+            <button class="btn btn-success" onclick="loadSampleData()" style="margin-bottom:6px;width:100%">🎲 โหลดข้อมูลตัวอย่าง 42 คน</button>
+            <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:6px;width:100%">📤 Export JSON</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-bottom:6px;width:100%">📥 Import JSON</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn btn-danger" onclick="resetAll()" style="width:100%">🗑️ รีเซ็ตทั้งหมด</button>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">📌 ข้อมูลระบบ</h3>
+            <div class="alert alert-info">
+              • พยาบาล: <strong id="infoNurses">0</strong> คน<br>
+              • เดือนที่มีตาราง: <strong id="infoMonths">0</strong> เดือน<br>
+              • คำขอแลกเวร: <strong id="infoSwaps">0</strong> รายการ<br>
+              • วันหยุดพิเศษ: <strong id="infoHolidays">0</strong> วัน<br>
+              • ผู้ใช้ระบบ: <strong id="infoUsers">0</strong> คน
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>☁️ ฐานข้อมูลออนไลน์ (Google Sheets)</h2>
+        <div class="alert alert-info">
+          ข้อมูล <strong>พยาบาล / ตารางเวร / วันหยุด / คำขอแลกเวร / ผู้ใช้ระบบ</strong> ถูกเก็บกลางไว้ที่ Google Sheet เดียวกัน ทุกเครื่อง/ทุกคนที่เข้าระบบจะเห็นข้อมูลตรงกันโดยอัตโนมัติ<br>
+          🔒 ที่อยู่ชีตและรหัสผ่านเชื่อมต่อถูกเก็บไว้ฝั่งเซิร์ฟเวอร์ (Cloudflare Worker) เท่านั้น ไม่ถูกส่งมาที่เบราว์เซอร์ จึงไม่มีทางเห็นได้จาก view-source หรือแท็บ Network เหมือนก่อนหน้านี้
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="cloudPull(true)">⬇️ ดึงข้อมูลล่าสุดจากชีต</button>
+          <button class="btn btn-success" onclick="cloudPush(true)">⬆️ ส่งข้อมูลปัจจุบันขึ้นชีต</button>
+          <span style="margin-left:auto;font-size:11px;color:#64748b" id="cloudStatus">ยังไม่เคยซิงค์</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📝 คู่มือการใช้งาน</h2>
+        <div class="alert alert-info">
+          <strong>ขั้นตอนการใช้งาน:</strong><br>
+          1. ไปที่แท็บ "ตั้งค่า" → กด "โหลดข้อมูลตัวอย่าง 42 คน"<br>
+          2. แก้ไขข้อมูลพยาบาลในแท็บ "พยาบาล" (กำหนดรุ่น 1-4, วันไม่สะดวก, และกะที่ไม่สะดวก)<br>
+          3. เพิ่มวันหยุดพิเศษในแท็บ "วันหยุด" (ถ้าต้องการ)<br>
+          4. ไปที่แท็บ "จัดเวร" เลือกเดือนแล้วกด "จัดเวรอัตโนมัติ"<br>
+          5. ดูตารางเวรในแท็บ "ปฏิทิน" กดที่วันเพื่อดูรายละเอียด<br>
+          6. หากต้องการแลกเวร ใช้แท็บ "แลกเวร" (ต้อง login ก่อน)<br>
+          7. Export PDF/CSV/Excel ได้จากแท็บปฏิทินและพยาบาล
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-users" class="panel">
+      <div class="card">
+        <h2>👥 จัดการผู้ใช้ระบบ</h2>
+        <button class="btn btn-primary" onclick="openUserModal()" style="margin-bottom:12px">➕ เพิ่มผู้ใช้</button>
+        <div class="alert alert-info">
+          <strong>บทบาท:</strong><br>
+          • <span class="badge badge-role-admin">ผู้ดูแลระบบ</span> - จัดการทุกอย่าง (พยาบาล, เวร, ผู้ใช้, อนุมัติแลกเวร)<br>
+          • <span class="badge badge-role-approver">ผู้อนุมัติ</span> - อนุมัติ/ปฏิเสธคำขอแลกเวร + ดูปฏิทิน/สถิติ<br>
+          • <span class="badge badge-role-requester">ผู้ยื่นคำขอ</span> - ยื่นคำขอแลกเวร + ดูปฏิทิน/สถิติ
+        </div>
+        <table>
+          <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>จัดการ</th></tr></thead>
+          <tbody id="userTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal พยาบาล -->
+<div class="modal" id="nurseModal">
+  <div class="modal-content">
+    <h3 id="nurseModalTitle">เพิ่มพยาบาล</h3>
+    <input type="hidden" id="nurseId">
+
+    <div class="modal-section">
+      <div class="modal-section-title">👤 ข้อมูลพื้นฐาน</div>
+      <div class="form-group"><label>รหัสพนักงาน *</label><input type="text" id="nurseCode" placeholder="เช่น N001"></div>
+      <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="nurseName" placeholder="เช่น สมหญิง ใจดี"></div>
+      <div class="form-group"><label>รุ่น *</label>
+        <select id="nurseGen">
+          <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
+          <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (เล็กสุด - Pre-op)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label>เบอร์โทรศัพท์</label><input type="text" id="nursePhone" placeholder="เช่น 081-234-5678"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🚫 ไม่สะดวกทั้งวัน</div>
+      <div class="form-group">
+        <label>📅 วันที่เฉพาะเจาะจง</label>
+        <input type="date" id="nurseUnavailDate">
+        <button class="btn btn-sm btn-secondary" onclick="addUnavailDate()" style="margin-top:5px">➕ เพิ่มวันที่</button>
+        <div class="tag-list" id="unavailDateList"></div>
+      </div>
+      <div class="form-group">
+        <label>🎌 วันหยุดนักขัตฤกษ์</label>
+        <select id="holidaySelect" style="margin-bottom:5px">
+          <option value="">-- เลือกวันหยุด --</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="addHolidayToUnavail()">➕ เพิ่มที่เลือก</button>
+        <button class="btn btn-sm btn-warning" onclick="addAllHolidaysToUnavail()" style="margin-left:5px">➕ เพิ่มทั้งหมด</button>
+        <div class="tag-list" id="unavailHolidayList"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>📆 วันในสัปดาห์ (ซ้ำทุกสัปดาห์)</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" value="0" class="unavailWeekday"> อาทิตย์</label>
+          <label><input type="checkbox" value="1" class="unavailWeekday"> จันทร์</label>
+          <label><input type="checkbox" value="2" class="unavailWeekday"> อังคาร</label>
+          <label><input type="checkbox" value="3" class="unavailWeekday"> พุธ</label>
+          <label><input type="checkbox" value="4" class="unavailWeekday"> พฤหัส</label>
+          <label><input type="checkbox" value="5" class="unavailWeekday"> ศุกร์</label>
+          <label><input type="checkbox" value="6" class="unavailWeekday"> เสาร์</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🗓️ ไม่สะดวกทั้งช่วง</div>
+      <div class="form-group">
+        <label>สัปดาห์ (เลือกวันใดวันหนึ่งในสัปดาห์นั้น)</label>
+        <div style="display:flex;gap:6px;align-items:end">
+          <div style="flex:1"><input type="date" id="unavailWeekDate"></div>
+          <button class="btn btn-sm btn-secondary" onclick="addUnavailWeek()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="unavailWeekList"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>เดือนทั้งเดือน</label>
+        <div style="display:flex;gap:6px;align-items:end">
+          <div style="flex:1"><input type="month" id="unavailMonthInput"></div>
+          <button class="btn btn-sm btn-secondary" onclick="addUnavailMonth()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="unavailMonthList"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">⏰ ไม่สะดวกเฉพาะกะ</div>
+      <div class="form-group">
+        <label>ระบุวันที่ + กะ</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:120px"><label style="font-size:11px">วันที่</label><input type="date" id="unavailShiftDate"></div>
+          <div style="flex:1;min-width:100px"><label style="font-size:11px">กะ</label>
+            <select id="unavailShiftType">
+              <option value="morning">เช้า</option><option value="afternoon">บ่าย</option>
+              <option value="night">ดึก</option><option value="preop">Pre-op</option>
+            </select>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="addUnavailShift()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="unavailShiftList"></div>
+      </div>
+      <div class="form-group">
+        <label>ระบุสัปดาห์ + กะ</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:120px"><label style="font-size:11px">วันในสัปดาห์</label><input type="date" id="unavailShiftWeekDate"></div>
+          <div style="flex:1;min-width:100px"><label style="font-size:11px">กะ</label>
+            <select id="unavailShiftWeekType">
+              <option value="morning">เช้า</option><option value="afternoon">บ่าย</option>
+              <option value="night">ดึก</option><option value="preop">Pre-op</option>
+            </select>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="addUnavailShiftInWeek()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="unavailShiftWeekList"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>ระบุเดือน + กะ</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:120px"><label style="font-size:11px">เดือน</label><input type="month" id="unavailShiftMonthInput"></div>
+          <div style="flex:1;min-width:100px"><label style="font-size:11px">กะ</label>
+            <select id="unavailShiftMonthType">
+              <option value="morning">เช้า</option><option value="afternoon">บ่าย</option>
+              <option value="night">ดึก</option><option value="preop">Pre-op</option>
+            </select>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="addUnavailShiftInMonth()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="unavailShiftMonthList"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-secondary" onclick="closeModal('nurseModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNurse()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bulk Edit -->
+<div class="modal" id="bulkEditModal">
+  <div class="modal-content">
+    <h3>✏️ แก้ไขข้อมูลหลายรายการ</h3>
+    <div class="select-all"><label><input type="checkbox" id="bulkSelectAll" onchange="toggleBulkSelectAll()"> เลือกทั้งหมด</label></div>
+    <div id="bulkEditList" style="max-height:350px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="form-group"><label>แก้ไขรุ่น</label>
+      <select id="bulkGen">
+        <option value="">ไม่เปลี่ยนแปลง</option>
+        <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
+        <option value="3">รุ่น 3</option><option value="4">รุ่น 4</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('bulkEditModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveBulkEdit()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal วันหยุด -->
+<div class="modal" id="holidayModal">
+  <div class="modal-content">
+    <h3 id="holidayModalTitle">เพิ่มวันหยุด</h3>
+    <input type="hidden" id="holidayEditDate">
+    <div class="form-group"><label>วันที่ *</label><input type="date" id="holidayDate"></div>
+    <div class="form-group"><label>ชื่อวันหยุด *</label><input type="text" id="holidayName" placeholder="เช่น วันหยุดพิเศษ"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('holidayModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveHoliday()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal รายละเอียดวัน -->
+<div class="modal" id="dayModal">
+  <div class="modal-content">
+    <h3 id="dayModalTitle">รายละเอียดเวร</h3>
+    <div id="dayModalContent"></div>
+    <div style="text-align:right;margin-top:15px"><button class="btn btn-secondary" onclick="closeModal('dayModal')">ปิด</button></div>
+  </div>
+</div>
+
+<!-- Modal แลกเวร -->
+<div class="modal" id="swapModal">
+  <div class="modal-content">
+    <h3>สร้างคำขอแลกเวร</h3>
+    <div class="form-group"><label>ผู้ขอ (พยาบาล A)</label><select id="swapFrom"></select></div>
+    <div class="form-group"><label>วันที่ขอแลก</label><input type="date" id="swapDate"></div>
+    <div class="form-group"><label>กะ</label>
+      <select id="swapShift">
+        <option value="morning">กะเช้า</option><option value="afternoon">กะบ่าย</option>
+        <option value="night">กะดึก</option>
+        <option value="preop_morning">Pre-op เช้า (วันหยุด)</option>
+        <option value="preop_afternoon">Pre-op บ่าย (วันหยุด)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>ผู้รับแทน (พยาบาล B)</label><select id="swapTo"></select></div>
+    <div class="form-group"><label>วันที่รับแทน (เว้นว่าง = วันเดียวกัน)</label><input type="date" id="swapDate2"></div>
+    <div class="form-group"><label>เหตุผล</label><textarea id="swapReason" style="min-height:50px"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('swapModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSwap()">💾 ส่งคำขอ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ผู้ใช้ -->
+<div class="modal" id="userModal">
+  <div class="modal-content">
+    <h3 id="userModalTitle">เพิ่มผู้ใช้</h3>
+    <input type="hidden" id="editUsername">
+    <div class="form-group"><label>ชื่อผู้ใช้ *</label><input type="text" id="userUsername"></div>
+    <div class="form-group"><label>รหัสผ่าน *</label><input type="password" id="userPassword"></div>
+    <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="userFullname"></div>
+    <div class="form-group"><label>บทบาท *</label>
+      <select id="userRole">
+        <option value="requester">ผู้ยื่นคำขอแลกเวร</option>
+        <option value="approver">ผู้อนุมัติคำขอ</option>
+        <option value="admin">ผู้ดูแลระบบ (จัดการทั้งหมด)</option>
+      </select>
+    </div>
+    <div class="form-group" id="userLineRow" style="display:none">
+      <label>💬 บัญชี LINE ที่เชื่อมไว้</label>
+      <div style="font-size:11px;color:#64748b" id="userLineStatus">-</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('userModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveUser()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+let nurses=[],schedule={},swaps=[],customHolidays=[],users=[];
+let currentUser=null;
+let currentMonth=new Date().toISOString().slice(0,7);
+let tempUnavailDates=[],tempUnavailShifts=[],tempUnavailWeeks=[],tempUnavailMonths=[];
+let tempUnavailShiftsInWeeks=[],tempUnavailShiftsInMonths=[],tempUnavailHolidays=[];
+
+try{
+  nurses=JSON.parse(localStorage.getItem('nurses')||'[]');
+  schedule=JSON.parse(localStorage.getItem('schedule')||'{}');
+  swaps=JSON.parse(localStorage.getItem('swaps')||'[]');
+  customHolidays=JSON.parse(localStorage.getItem('customHolidays')||'[]');
+  users=JSON.parse(localStorage.getItem('users')||'[]');
+  const savedUser=localStorage.getItem('currentUser');
+  if(savedUser)currentUser=JSON.parse(savedUser);
+}catch(e){nurses=[];schedule={};swaps=[];customHolidays=[];users=[]}
+
+if(users.length===0){
+  users=[
+    {username:'admin',password:'admin123',fullname:'ผู้ดูแลระบบ',role:'admin'},
+    {username:'approver',password:'approve123',fullname:'หัวหน้าเวร (ผู้อนุมัติ)',role:'approver'},
+    {username:'requester',password:'request123',fullname:'พยาบาล (ผู้ยื่นคำขอ)',role:'requester'}
+  ];
+  localStorage.setItem('users',JSON.stringify(users));
+}
+
+const OFFICIAL_HOLIDAYS={
+  '2025':[
+    {date:'2025-01-01',name:'วันขึ้นปีใหม่'},{date:'2025-02-12',name:'วันมาฆบูชา'},
+    {date:'2025-04-06',name:'วันจักรี'},{date:'2025-04-13',name:'วันสงกรานต์'},
+    {date:'2025-04-14',name:'วันสงกรานต์'},{date:'2025-04-15',name:'วันสงกรานต์'},
+    {date:'2025-05-01',name:'วันแรงงาน'},{date:'2025-05-04',name:'วันฉัตรมงคล'},
+    {date:'2025-05-05',name:'วันฉัตรมงคล (ชดเชย)'},{date:'2025-05-11',name:'วันวิสาขบูชา'},
+    {date:'2025-05-12',name:'วันวิสาขบูชา (ชดเชย)'},{date:'2025-06-02',name:'วันเฉลิมพระชนมพรรษาพระราชินี'},
+    {date:'2025-06-03',name:'วันเฉลิมพระชนมพรรษาพระราชินี (ชดเชย)'},{date:'2025-07-10',name:'วันอาสาฬหบูชา'},
+    {date:'2025-07-28',name:'วันเฉลิมพระชนมพรรษา ร.10'},{date:'2025-08-12',name:'วันแม่แห่งชาติ'},
+    {date:'2025-10-13',name:'วันคล้ายวันสวรรคต ร.9'},{date:'2025-10-23',name:'วันปิยมหาราช'},
+    {date:'2025-12-05',name:'วันพ่อแห่งชาติ'},{date:'2025-12-10',name:'วันรัฐธรรมนูญ'},
+    {date:'2025-12-31',name:'วันสิ้นปี'}
+  ],
+  '2026':[
+    {date:'2026-01-01',name:'วันขึ้นปีใหม่'},{date:'2026-02-16',name:'วันมาฆบูชา'},
+    {date:'2026-04-06',name:'วันจักรี'},{date:'2026-04-13',name:'วันสงกรานต์'},
+    {date:'2026-04-14',name:'วันสงกรานต์'},{date:'2026-04-15',name:'วันสงกรานต์'},
+    {date:'2026-05-01',name:'วันแรงงาน'},{date:'2026-05-04',name:'วันฉัตรมงคล'},
+    {date:'2026-05-05',name:'วันฉัตรมงคล (ชดเชย)'},{date:'2026-06-01',name:'วันเฉลิมพระชนมพรรษาพระราชินี'},
+    {date:'2026-06-02',name:'วันวิสาขบูชา'},{date:'2026-07-27',name:'วันอาสาฬหบูชา'},
+    {date:'2026-07-28',name:'วันเฉลิมพระชนมพรรษา ร.10'},{date:'2026-08-12',name:'วันแม่แห่งชาติ'},
+    {date:'2026-10-13',name:'วันคล้ายวันสวรรคต ร.9'},{date:'2026-10-23',name:'วันปิยมหาราช'},
+    {date:'2026-12-05',name:'วันพ่อแห่งชาติ'},{date:'2026-12-10',name:'วันรัฐธรรมนูญ'},
+    {date:'2026-12-31',name:'วันสิ้นปี'}
+  ],
+  '2027':[
+    {date:'2027-01-01',name:'วันขึ้นปีใหม่'},{date:'2027-02-05',name:'วันมาฆบูชา'},
+    {date:'2027-04-06',name:'วันจักรี'},{date:'2027-04-13',name:'วันสงกรานต์'},
+    {date:'2027-04-14',name:'วันสงกรานต์'},{date:'2027-04-15',name:'วันสงกรานต์'},
+    {date:'2027-05-01',name:'วันแรงงาน'},{date:'2027-05-20',name:'วันวิสาขบูชา'},
+    {date:'2027-05-21',name:'วันวิสาขบูชา (ชดเชย)'},{date:'2027-05-31',name:'วันเฉลิมพระชนมพรรษาพระราชินี'},
+    {date:'2027-06-01',name:'วันเฉลิมพระชนมพรรษาพระราชินี (ชดเชย)'},{date:'2027-07-17',name:'วันอาสาฬหบูชา'},
+    {date:'2027-07-27',name:'วันเฉลิมพระชนมพรรษา ร.10'},{date:'2027-08-12',name:'วันแม่แห่งชาติ'},
+    {date:'2027-10-13',name:'วันคล้ายวันสวรรคต ร.9'},{date:'2027-10-23',name:'วันปิยมหาราช'},
+    {date:'2027-12-05',name:'วันพ่อแห่งชาติ'},{date:'2027-12-10',name:'วันรัฐธรรมนูญ'},
+    {date:'2027-12-31',name:'วันสิ้นปี'}
+  ]
+};
+
+const WEEKDAY_TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+const MONTH_TH=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MONTH_SHORT_TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const SHIFT_LABELS={morning:'เช้า',afternoon:'บ่าย',night:'ดึก',preop:'Pre-op',preop_morning:'Pre-op เช้า',preop_afternoon:'Pre-op บ่าย'};
+const MONTH_NAMES={'01':'ม.ค.','02':'ก.พ.','03':'มี.ค.','04':'เม.ย.','05':'พ.ค.','06':'มิ.ย.','07':'ก.ค.','08':'ส.ค.','09':'ก.ย.','10':'ต.ค.','11':'พ.ย.','12':'ธ.ค.'};
+const ROLE_LABELS={admin:'ผู้ดูแลระบบ',approver:'ผู้อนุมัติ',requester:'ผู้ยื่นคำขอ'};
+
+// ============ TOAST NOTIFICATIONS ============
+// window.alert is overridden below so every existing alert('✅ ...'/'❌ ...'/'⚠️ ...') call
+// site throughout the app becomes a non-blocking toast automatically, with zero risk of
+// touching each of the ~58 call sites individually. confirm() is left native/blocking on
+// purpose — it gates real yes/no decisions (delete, logout) where a blocking prompt is correct.
+function showToast(message,type){
+  message=String(message);
+  const prefixes=[['✅','success'],['❌','error'],['⚠️','warn']];
+  for(const[emoji,t]of prefixes){
+    if(message.indexOf(emoji)===0){
+      if(!type)type=t;
+      message=message.slice(emoji.length).trim();
+      break;
+    }
+  }
+  if(!type)type='info';
+  const icons={success:'✅',error:'❌',warn:'⚠️',info:'ℹ️'};
+  const container=document.getElementById('toastContainer');
+  if(!container){window.__nativeAlert(message);return}
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.style.cursor='pointer';
+  const iconSpan=document.createElement('span');
+  iconSpan.className='icon';
+  iconSpan.textContent=icons[type];
+  const msgSpan=document.createElement('span');
+  msgSpan.className='msg';
+  msgSpan.textContent=message;
+  el.appendChild(iconSpan);
+  el.appendChild(msgSpan);
+  const dismiss=()=>{el.classList.add('hide');setTimeout(()=>el.remove(),200)};
+  el.onclick=dismiss;
+  container.appendChild(el);
+  setTimeout(dismiss,type==='error'?5500:3200);
+}
+window.__nativeAlert=window.alert;
+window.alert=function(message){showToast(message)};
+
+// ============ UTILS ============
+function save(){
+  try{
+    localStorage.setItem('nurses',JSON.stringify(nurses));
+    localStorage.setItem('schedule',JSON.stringify(schedule));
+    localStorage.setItem('swaps',JSON.stringify(swaps));
+    localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
+    localStorage.setItem('users',JSON.stringify(users));
+    if(currentUser)localStorage.setItem('currentUser',JSON.stringify(currentUser));
+    cloudPush(false);
+    return true;
+  }catch(e){alert('❌ บันทึกไม่สำเร็จ: '+e.message);return false}
+}
+
+// ============ CLOUD DATABASE (Google Sheets, proxied through the Worker's /api/data) ============
+// The browser only ever talks to same-origin /api/data. The Apps Script URL + token stay
+// server-side as Worker secrets/vars (see src/worker.js) and are never sent to the client —
+// this is what actually keeps the token out of view-source and the Network tab, unlike storing
+// it (even "encrypted") in client-side JS, which any user can still read/decrypt in devtools.
+let cloudLastSync=null;
+try{cloudLastSync=localStorage.getItem('cloudLastSync')||null}catch(e){cloudLastSync=null}
+
+function fillCloudConfigFields(){
+  const status=document.getElementById('cloudStatus');
+  if(!status)return;
+  status.textContent=cloudLastSync?('ซิงค์ล่าสุด: '+new Date(cloudLastSync).toLocaleString('th-TH')):'ยังไม่เคยซิงค์';
+}
+async function cloudPull(manual){
+  const status=document.getElementById('cloudStatus');
+  try{
+    if(status)status.textContent='⏳ กำลังดึงข้อมูล...';
+    const res=await fetch('/api/data');
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    if(data.nurses)nurses=data.nurses;
+    if(data.schedule)schedule=data.schedule;
+    if(data.swaps)swaps=data.swaps;
+    if(data.customHolidays)customHolidays=data.customHolidays;
+    if(data.users&&data.users.length)users=data.users;
+    localStorage.setItem('nurses',JSON.stringify(nurses));
+    localStorage.setItem('schedule',JSON.stringify(schedule));
+    localStorage.setItem('swaps',JSON.stringify(swaps));
+    localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
+    localStorage.setItem('users',JSON.stringify(users));
+    cloudLastSync=new Date().toISOString();
+    localStorage.setItem('cloudLastSync',cloudLastSync);
+    if(status)status.textContent='✅ ซิงค์ล่าสุด: '+new Date(cloudLastSync).toLocaleString('th-TH');
+    if(document.getElementById('mainApp')&&document.getElementById('mainApp').style.display!=='none'){
+      renderNurses();renderCalendar();renderHolidays();renderSwaps();renderStats();renderUsers();updateInfo();
+    }
+    if(manual)alert('✅ ดึงข้อมูลจากฐานข้อมูลออนไลน์สำเร็จ');
+    return true;
+  }catch(err){
+    if(status)status.textContent='❌ ดึงข้อมูลไม่สำเร็จ: '+err.message;
+    if(manual)alert('❌ ดึงข้อมูลไม่สำเร็จ: '+err.message);
+    else console.warn('cloudPull failed:',err.message);
+    return false;
+  }
+}
+async function cloudPush(manual){
+  const status=document.getElementById('cloudStatus');
+  try{
+    if(manual&&status)status.textContent='⏳ กำลังส่งข้อมูล...';
+    const res=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nurses,schedule,swaps,customHolidays,users})});
+    const result=await res.json();
+    if(result.error)throw new Error(result.error);
+    cloudLastSync=new Date().toISOString();
+    localStorage.setItem('cloudLastSync',cloudLastSync);
+    if(status)status.textContent='✅ ซิงค์ล่าสุด: '+new Date(cloudLastSync).toLocaleString('th-TH');
+    if(manual)alert('✅ ส่งข้อมูลขึ้นฐานข้อมูลออนไลน์สำเร็จ');
+    return true;
+  }catch(err){
+    if(status)status.textContent='⚠️ ส่งข้อมูลขึ้นชีตไม่สำเร็จ (ข้อมูลยังปลอดภัยในเครื่องนี้)';
+    if(manual)alert('❌ ส่งข้อมูลไม่สำเร็จ: '+err.message);
+    else console.warn('cloudPush failed:',err.message);
+    return false;
+  }
+}
+function getAllHolidays(){
+  const all=[];
+  Object.values(OFFICIAL_HOLIDAYS).forEach(list=>{
+    list.forEach(h=>{if(!all.find(x=>x.date===h.date))all.push({date:h.date,name:h.name,type:'official'})});
+  });
+  customHolidays.forEach(h=>{if(!all.find(x=>x.date===h.date))all.push({...h,type:'custom'})});
+  return all.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function isOfficialHoliday(d){const y=d.slice(0,4);return OFFICIAL_HOLIDAYS[y]&&OFFICIAL_HOLIDAYS[y].some(h=>h.date===d)}
+function getOfficialHolidayName(d){const y=d.slice(0,4);const h=(OFFICIAL_HOLIDAYS[y]||[]).find(x=>x.date===d);return h?h.name:''}
+function isCustomHoliday(d){return customHolidays.some(h=>h.date===d)}
+function getCustomHolidayName(d){const h=customHolidays.find(x=>x.date===d);return h?h.name:''}
+function isHoliday(d){return isOfficialHoliday(d)||isCustomHoliday(d)}
+function isWeekend(d){const dt=new Date(d);return dt.getDay()===0||dt.getDay()===6}
+function isOffDay(d){return isWeekend(d)||isHoliday(d)}
+function formatDate(d){return d.toISOString().slice(0,10)}
+function getWeekNumber(d){const dt=new Date(d);const s=new Date(dt.getFullYear(),0,1);const days=Math.floor((dt-s)/(24*60*60*1000));return Math.ceil((days+s.getDay()+1)/7)}
+
+// ============ LOGIN ============
+function checkLogin(){
+  if(currentUser){
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    document.getElementById('currentUserDisplay').textContent='👤 '+currentUser.fullname;
+    document.getElementById('currentRoleDisplay').textContent=ROLE_LABELS[currentUser.role];
+    applyRolePermissions();
+    initApp();
+  }else{
+    document.getElementById('loginPage').style.display='block';
+    document.getElementById('mainApp').style.display='none';
+  }
+}
+function doLogin(){
+  const u=document.getElementById('loginUsername').value.trim();
+  const p=document.getElementById('loginPassword').value;
+  if(!u||!p){alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');return}
+  const user=users.find(x=>x.username===u&&x.password===p);
+  if(!user){alert(' ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');return}
+  currentUser=user;
+  save();
+  checkLogin();
+}
+function doLogout(){
+  if(!confirm('ต้องการออกจากระบบ?'))return;
+  fetch('/auth/logout',{method:'POST'}).catch(()=>{});
+  currentUser=null;
+  localStorage.removeItem('currentUser');
+  checkLogin();
+}
+function linkLineAccount(){
+  location.href='/auth/line/login?link=1';
+}
+function showLoginNotice(){
+  const params=new URLSearchParams(location.search);
+  const err=params.get('login_error');
+  const linked=params.get('linked');
+  if(!err&&!linked)return;
+  const messages={
+    unlinked:'❌ บัญชี LINE นี้ยังไม่ได้เชื่อมกับผู้ใช้ในระบบ กรุณาเข้าสู่ระบบด้วยรหัสผ่านแล้วกดปุ่ม "เชื่อมบัญชี LINE"',
+    state_mismatch:'❌ การเข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+    token_exchange_failed:'❌ ไม่สามารถยืนยันตัวตนกับ LINE ได้ กรุณาลองใหม่อีกครั้ง',
+    profile_failed:'❌ ไม่สามารถดึงข้อมูลโปรไฟล์ LINE ได้ กรุณาลองใหม่อีกครั้ง',
+    backend_unavailable:'❌ เชื่อมต่อฐานข้อมูลไม่ได้ในขณะนี้ กรุณาลองใหม่ภายหลัง',
+    must_login_first:'⚠️ กรุณาเข้าสู่ระบบด้วยรหัสผ่านก่อน แล้วจึงกด "เชื่อมบัญชี LINE"',
+    user_not_found:'❌ ไม่พบบัญชีผู้ใช้ที่จะเชื่อมต่อ'
+  };
+  // linked=1 fires while already logged in via password (mainApp visible, loginPage hidden),
+  // so an alert is used instead of the (invisible in that state) inline #loginNotice div.
+  if(linked==='1'){
+    alert('✅ เชื่อมบัญชี LINE สำเร็จแล้ว');
+  }else if(err&&messages[err]){
+    const notice=document.getElementById('loginNotice');
+    if(notice)notice.innerHTML='<div class="alert alert-warn" style="margin-bottom:10px">'+messages[err]+'</div>';
+  }
+  history.replaceState(null,'',location.pathname);
+}
+function applyRolePermissions(){
+  const role=currentUser.role;
+  // admin: เห็นทุก tab
+  // approver: เห็น calendar, schedule, holidays, swap, stats (ไม่เห็น nurses, settings, users)
+  // requester: เห็น calendar, swap, stats (ไม่เห็น nurses, schedule, holidays, settings, users)
+  const tabVisibility={
+    nurses:role==='admin',
+    calendar:true,
+    schedule:role==='admin'||role==='approver',
+    holidays:role==='admin',
+    swap:true,
+    stats:true,
+    settings:role==='admin',
+    users:role==='admin'
+  };
+  Object.keys(tabVisibility).forEach(k=>{
+    const tab=document.getElementById('tab-'+k);
+    if(tab)tab.style.display=tabVisibility[k]?'':'none';
+  });
+}
+
+// ============ APP INIT ============
+function initApp(){
+  document.getElementById('currentDate').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('monthPicker').value=currentMonth;
+  document.getElementById('scheduleMonth').value=currentMonth;
+  document.getElementById('statsMonth').value=currentMonth;
+  document.getElementById('filterHolidayYear').value=currentMonth.slice(0,4);
+  renderNurses();
+  renderCalendar();
+  renderHolidays();
+  renderSwaps();
+  renderStats();
+  renderUsers();
+  updateInfo();
+}
+
+// ============ PANELS ============
+function showPanel(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='calendar')renderCalendar();
+  if(name==='holidays')renderHolidays();
+  if(name==='stats')renderStats();
+  if(name==='swap')renderSwaps();
+  if(name==='settings'){updateInfo();fillCloudConfigFields();}
+  if(name==='users')renderUsers();
+}
+function openModal(id){const m=document.getElementById(id);if(m)m.classList.add('show')}
+function closeModal(id){const m=document.getElementById(id);if(m)m.classList.remove('show')}
+
+// ============ NURSES ============
+function openNurseModal(id){
+  try{
+    document.getElementById('nurseId').value='';
+    document.getElementById('nurseCode').value='';
+    document.getElementById('nurseName').value='';
+    document.getElementById('nurseGen').value='1';
+    document.getElementById('nursePhone').value='';
+    document.querySelectorAll('.unavailWeekday').forEach(c=>c.checked=false);
+    tempUnavailDates=[];tempUnavailShifts=[];tempUnavailWeeks=[];tempUnavailMonths=[];
+    tempUnavailShiftsInWeeks=[];tempUnavailShiftsInMonths=[];tempUnavailHolidays=[];
+    
+    // เติมตัวเลือกวันหยุด
+    const holidaySelect=document.getElementById('holidaySelect');
+    holidaySelect.innerHTML='<option value="">-- เลือกวันหยุด --</option>';
+    getAllHolidays().forEach(h=>{
+      const opt=document.createElement('option');
+      opt.value=h.date;
+      opt.textContent=h.date+' - '+h.name+(h.type==='official'?' (ราชการ)':'');
+      holidaySelect.appendChild(opt);
+    });
+    
+    if(id){
+      const n=nurses.find(x=>x.id===id);
+      if(!n){alert('ไม่พบข้อมูลพยาบาล');return}
+      document.getElementById('nurseModalTitle').textContent='แก้ไขพยาบาล';
+      document.getElementById('nurseId').value=n.id;
+      document.getElementById('nurseCode').value=n.code;
+      document.getElementById('nurseName').value=n.name;
+      document.getElementById('nurseGen').value=n.generation;
+      document.getElementById('nursePhone').value=n.phone||'';
+      tempUnavailDates=[...(n.unavailableDates||[])];
+      tempUnavailShifts=[...(n.unavailableShifts||[])];
+      tempUnavailWeeks=[...(n.unavailableWeeks||[])];
+      tempUnavailMonths=[...(n.unavailableMonths||[])];
+      tempUnavailShiftsInWeeks=[...(n.unavailableShiftsInWeeks||[])];
+      tempUnavailShiftsInMonths=[...(n.unavailableShiftsInMonths||[])];
+      tempUnavailHolidays=[...(n.unavailableHolidays||[])];
+      (n.unavailableWeekdays||[]).forEach(w=>{
+        const cb=document.querySelector(`.unavailWeekday[value="${w}"]`);
+        if(cb)cb.checked=true;
+      });
+    }else{
+      document.getElementById('nurseModalTitle').textContent='เพิ่มพยาบาล';
+    }
+    renderUnavailDates();renderUnavailShifts();renderUnavailWeeks();renderUnavailMonths();
+    renderUnavailShiftsInWeeks();renderUnavailShiftsInMonths();renderUnavailHolidays();
+    openModal('nurseModal');
+  }catch(e){alert('❌ เกิดข้อผิดพลาด: '+e.message)}
+}
+
+function addUnavailDate(){
+  const d=document.getElementById('nurseUnavailDate').value;
+  if(d&&!tempUnavailDates.includes(d)){tempUnavailDates.push(d);tempUnavailDates.sort();renderUnavailDates()}
+}
+function removeUnavailDate(d){tempUnavailDates=tempUnavailDates.filter(x=>x!==d);renderUnavailDates()}
+function renderUnavailDates(){
+  document.getElementById('unavailDateList').innerHTML=tempUnavailDates.map(d=>
+    `<span class="tag">${d} <span class="remove" onclick="removeUnavailDate('${d}')"></span></span>`
+  ).join('');
+}
+
+function addHolidayToUnavail(){
+  const date=document.getElementById('holidaySelect').value;
+  if(!date){alert('กรุณาเลือกวันหยุด');return}
+  if(tempUnavailHolidays.includes(date)){alert('มีวันหยุดนี้อยู่แล้ว');return}
+  tempUnavailHolidays.push(date);
+  tempUnavailHolidays.sort();
+  renderUnavailHolidays();
+}
+function addAllHolidaysToUnavail(){
+  const all=getAllHolidays();
+  let added=0;
+  all.forEach(h=>{
+    if(!tempUnavailHolidays.includes(h.date)){tempUnavailHolidays.push(h.date);added++}
+  });
+  tempUnavailHolidays.sort();
+  renderUnavailHolidays();
+  alert('✅ เพิ่มวันหยุดทั้งหมด '+added+' วัน');
+}
+function removeUnavailHoliday(d){tempUnavailHolidays=tempUnavailHolidays.filter(x=>x!==d);renderUnavailHolidays()}
+function renderUnavailHolidays(){
+  document.getElementById('unavailHolidayList').innerHTML=tempUnavailHolidays.map(d=>{
+    const name=getOfficialHolidayName(d)||getCustomHolidayName(d)||d;
+    return `<span class="tag-holiday">${d} ${name} <span class="remove" onclick="removeUnavailHoliday('${d}')">✕</span></span>`;
+  }).join('');
+}
+
+function addUnavailShift(){
+  const date=document.getElementById('unavailShiftDate').value;
+  const shift=document.getElementById('unavailShiftType').value;
+  if(!date){alert('กรุณาเลือกวันที่');return}
+  if(tempUnavailShifts.some(s=>s.date===date&&s.shift===shift)){alert('มีรายการนี้อยู่แล้ว');return}
+  tempUnavailShifts.push({date,shift});
+  tempUnavailShifts.sort((a,b)=>a.date.localeCompare(b.date));
+  renderUnavailShifts();
+  document.getElementById('unavailShiftDate').value='';
+}
+function removeUnavailShift(idx){tempUnavailShifts.splice(idx,1);renderUnavailShifts()}
+function renderUnavailShifts(){
+  document.getElementById('unavailShiftList').innerHTML=tempUnavailShifts.map((s,idx)=>
+    `<span class="tag-shift">${s.date} ${SHIFT_LABELS[s.shift]} <span class="remove" onclick="removeUnavailShift(${idx})">✕</span></span>`
+  ).join('');
+}
+
+function addUnavailWeek(){
+  const date=document.getElementById('unavailWeekDate').value;
+  if(!date){alert('กรุณาเลือกวันที่');return}
+  const weekNum=getWeekNumber(date);
+  const year=new Date(date).getFullYear();
+  if(tempUnavailWeeks.some(w=>w.year===year&&w.week===weekNum)){alert('มีสัปดาห์นี้อยู่แล้ว');return}
+  tempUnavailWeeks.push({year,week:weekNum,refDate:date});
+  tempUnavailWeeks.sort((a,b)=>a.year-b.year||a.week-b.week);
+  renderUnavailWeeks();
+  document.getElementById('unavailWeekDate').value='';
+}
+function removeUnavailWeek(idx){tempUnavailWeeks.splice(idx,1);renderUnavailWeeks()}
+function renderUnavailWeeks(){
+  document.getElementById('unavailWeekList').innerHTML=tempUnavailWeeks.map((w,idx)=>
+    `<span class="tag-week">สัปดาห์ที่ ${w.week}/${w.year} <span class="remove" onclick="removeUnavailWeek(${idx})">✕</span></span>`
+  ).join('');
+}
+
+function addUnavailMonth(){
+  const month=document.getElementById('unavailMonthInput').value;
+  if(!month){alert('กรุณาเลือกเดือน');return}
+  if(tempUnavailMonths.includes(month)){alert('มีเดือนนี้อยู่แล้ว');return}
+  tempUnavailMonths.push(month);
+  tempUnavailMonths.sort();
+  renderUnavailMonths();
+  document.getElementById('unavailMonthInput').value='';
+}
+function removeUnavailMonth(idx){tempUnavailMonths.splice(idx,1);renderUnavailMonths()}
+function renderUnavailMonths(){
+  document.getElementById('unavailMonthList').innerHTML=tempUnavailMonths.map((m,idx)=>{
+    const[y,mon]=m.split('-');
+    return `<span class="tag-month">${MONTH_NAMES[mon]}/${parseInt(y)+543} <span class="remove" onclick="removeUnavailMonth(${idx})">✕</span></span>`;
+  }).join('');
+}
+
+function addUnavailShiftInWeek(){
+  const date=document.getElementById('unavailShiftWeekDate').value;
+  const shift=document.getElementById('unavailShiftWeekType').value;
+  if(!date){alert('กรุณาเลือกวันที่');return}
+  const weekNum=getWeekNumber(date);
+  const year=new Date(date).getFullYear();
+  if(tempUnavailShiftsInWeeks.some(w=>w.year===year&&w.week===weekNum&&w.shift===shift)){alert('มีรายการนี้อยู่แล้ว');return}
+  tempUnavailShiftsInWeeks.push({year,week:weekNum,shift,refDate:date});
+  tempUnavailShiftsInWeeks.sort((a,b)=>a.year-b.year||a.week-b.week);
+  renderUnavailShiftsInWeeks();
+  document.getElementById('unavailShiftWeekDate').value='';
+}
+function removeUnavailShiftInWeek(idx){tempUnavailShiftsInWeeks.splice(idx,1);renderUnavailShiftsInWeeks()}
+function renderUnavailShiftsInWeeks(){
+  document.getElementById('unavailShiftWeekList').innerHTML=tempUnavailShiftsInWeeks.map((w,idx)=>
+    `<span class="tag-shift-week">สัปดาห์ที่ ${w.week}/${w.year} ${SHIFT_LABELS[w.shift]} <span class="remove" onclick="removeUnavailShiftInWeek(${idx})">✕</span></span>`
+  ).join('');
+}
+
+function addUnavailShiftInMonth(){
+  const month=document.getElementById('unavailShiftMonthInput').value;
+  const shift=document.getElementById('unavailShiftMonthType').value;
+  if(!month){alert('กรุณาเลือกเดือน');return}
+  if(tempUnavailShiftsInMonths.some(m=>m.month===month&&m.shift===shift)){alert('มีรายการนี้อยู่แล้ว');return}
+  tempUnavailShiftsInMonths.push({month,shift});
+  tempUnavailShiftsInMonths.sort((a,b)=>a.month.localeCompare(b.month));
+  renderUnavailShiftsInMonths();
+  document.getElementById('unavailShiftMonthInput').value='';
+}
+function removeUnavailShiftInMonth(idx){tempUnavailShiftsInMonths.splice(idx,1);renderUnavailShiftsInMonths()}
+function renderUnavailShiftsInMonths(){
+  document.getElementById('unavailShiftMonthList').innerHTML=tempUnavailShiftsInMonths.map((m,idx)=>{
+    const[y,mon]=m.month.split('-');
+    return `<span class="tag-shift-month">${MONTH_NAMES[mon]}/${parseInt(y)+543} ${SHIFT_LABELS[m.shift]} <span class="remove" onclick="removeUnavailShiftInMonth(${idx})">✕</span></span>`;
+  }).join('');
+}
+
+function saveNurse(){
+  try{
+    const id=document.getElementById('nurseId').value;
+    const code=document.getElementById('nurseCode').value.trim();
+    const name=document.getElementById('nurseName').value.trim();
+    const gen=document.getElementById('nurseGen').value;
+    const phone=document.getElementById('nursePhone').value.trim();
+    const weekdays=Array.from(document.querySelectorAll('.unavailWeekday:checked')).map(c=>parseInt(c.value));
+    
+    if(!code||!name){alert('กรุณากรอกรหัสและชื่อ');return}
+    
+    if(id){
+      const n=nurses.find(x=>x.id===id);
+      if(!n){alert('ไม่พบข้อมูลพยาบาล');return}
+      Object.assign(n,{code,name,generation:gen,phone,
+        unavailableDates:[...tempUnavailDates],unavailableWeekdays:weekdays,
+        unavailableShifts:[...tempUnavailShifts],unavailableWeeks:[...tempUnavailWeeks],
+        unavailableMonths:[...tempUnavailMonths],
+        unavailableShiftsInWeeks:[...tempUnavailShiftsInWeeks],
+        unavailableShiftsInMonths:[...tempUnavailShiftsInMonths],
+        unavailableHolidays:[...tempUnavailHolidays]
+      });
+    }else{
+      nurses.push({id:'N'+Date.now(),code,name,generation:gen,phone,
+        unavailableDates:[...tempUnavailDates],unavailableWeekdays:weekdays,
+        unavailableShifts:[...tempUnavailShifts],unavailableWeeks:[...tempUnavailWeeks],
+        unavailableMonths:[...tempUnavailMonths],
+        unavailableShiftsInWeeks:[...tempUnavailShiftsInWeeks],
+        unavailableShiftsInMonths:[...tempUnavailShiftsInMonths],
+        unavailableHolidays:[...tempUnavailHolidays]
+      });
+    }
+    
+    if(save()){closeModal('nurseModal');renderNurses();updateInfo();alert('✅ บันทึกข้อมูลสำเร็จ!')}
+  }catch(e){alert('❌ เกิดข้อผิดพลาด: '+e.message)}
+}
+
+function deleteNurse(id){
+  if(!confirm('ต้องการลบพยาบาลคนนี้?'))return;
+  nurses=nurses.filter(n=>n.id!==id);
+  if(save()){renderNurses();updateInfo();alert('✅ ลบข้อมูลสำเร็จ')}
+}
+
+function toggleSelectAll(){
+  const checkboxes=document.querySelectorAll('.nurse-checkbox');
+  const selectAll=document.getElementById('selectAll');
+  checkboxes.forEach(cb=>cb.checked=selectAll.checked);
+}
+
+function openBulkEditModal(){
+  document.getElementById('bulkSelectAll').checked=false;
+  renderBulkEditList();
+  openModal('bulkEditModal');
+}
+function toggleBulkSelectAll(){
+  const selectAll=document.getElementById('bulkSelectAll').checked;
+  document.querySelectorAll('.bulk-checkbox').forEach(cb=>cb.checked=selectAll);
+}
+function renderBulkEditList(){
+  document.getElementById('bulkEditList').innerHTML=nurses.map(n=>`
+    <div class="bulk-edit-row">
+      <input type="checkbox" class="bulk-checkbox" value="${n.id}" id="bulk-${n.id}">
+      <label for="bulk-${n.id}" style="flex:1;cursor:pointer">${n.code} - ${n.name}</label>
+      <span class="badge badge-gen${n.generation}">รุ่น ${n.generation}</span>
+    </div>
+  `).join('');
+}
+function saveBulkEdit(){
+  const checkboxes=document.querySelectorAll('.bulk-checkbox:checked');
+  const newGen=document.getElementById('bulkGen').value;
+  if(checkboxes.length===0){alert('กรุณาเลือกพยาบาลอย่างน้อย 1 คน');return}
+  let count=0;
+  checkboxes.forEach(cb=>{
+    const n=nurses.find(x=>x.id===cb.value);
+    if(n&&newGen){n.generation=newGen;count++}
+  });
+  if(save()){closeModal('bulkEditModal');renderNurses();alert('✅ แก้ไขสำเร็จ '+count+' คน')}
+}
+
+function renderNurses(){
+  try{
+    const search=(document.getElementById('searchNurse').value||'').toLowerCase();
+    const filterGen=document.getElementById('filterGen').value;
+    let list=nurses.filter(n=>{
+      const matchSearch=!search||n.code.toLowerCase().includes(search)||n.name.toLowerCase().includes(search);
+      const matchGen=!filterGen||n.generation===filterGen;
+      return matchSearch&&matchGen;
+    });
+    document.getElementById('nurseCount').textContent='พบ '+list.length+' / '+nurses.length+' คน';
+    document.getElementById('nurseTable').innerHTML=list.map(n=>{
+      const shiftList=(n.unavailableShifts||[]).map(s=>`<span class="tag-shift">${s.date.slice(5)} ${SHIFT_LABELS[s.shift]}</span>`).join(' ');
+      const weekList=(n.unavailableWeeks||[]).map(w=>`<span class="tag-week">สัปดาห์${w.week}/${w.year}</span>`).join(' ');
+      const monthList=(n.unavailableMonths||[]).map(m=>{const[y,mon]=m.split('-');return `<span class="tag-month">${MONTH_NAMES[mon]}/${parseInt(y)+543}</span>`}).join(' ');
+      const shiftWeekList=(n.unavailableShiftsInWeeks||[]).map(w=>`<span class="tag-shift-week">สัปดาห์${w.week}/${w.year} ${SHIFT_LABELS[w.shift]}</span>`).join(' ');
+      const shiftMonthList=(n.unavailableShiftsInMonths||[]).map(m=>{const[y,mon]=m.month.split('-');return `<span class="tag-shift-month">${MONTH_NAMES[mon]}/${parseInt(y)+543} ${SHIFT_LABELS[m.shift]}</span>`}).join(' ');
+      const holidayList=(n.unavailableHolidays||[]).map(d=>{const name=getOfficialHolidayName(d)||getCustomHolidayName(d)||'';return `<span class="tag-holiday">${d.slice(5)} ${name}</span>`}).join(' ');
+      return `
+        <tr>
+          <td><input type="checkbox" class="nurse-checkbox" value="${n.id}"></td>
+          <td><strong>${n.code}</strong></td>
+          <td>${n.name}</td>
+          <td><span class="badge badge-gen${n.generation}">รุ่น ${n.generation}</span></td>
+          <td>${n.phone||'-'}</td>
+          <td>${n.unavailableDates&&n.unavailableDates.length?n.unavailableDates.map(d=>`<span class="tag">${d.slice(5)}</span>`).join(' '):''} ${holidayList} ${shiftList} ${weekList} ${monthList} ${shiftWeekList} ${shiftMonthList||'-'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="openNurseModal('${n.id}')">✏️</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteNurse('${n.id}')">🗑️</button>
+          </td>
+        </tr>
+      `;
+    }).join('')||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:30px">ยังไม่มีข้อมูลพยาบาล<br><br><button class="btn btn-primary" onclick="openNurseModal()">➕ เพิ่มพยาบาลคนแรก</button></td></tr>';
+  }catch(e){
+    document.getElementById('nurseTable').innerHTML='<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:30px">เกิดข้อผิดพลาด: '+e.message+'</td></tr>';
+  }
+}
+
+// ============ EXCEL IMPORT/EXPORT ============
+function importExcel(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const workbook=XLSX.read(data,{type:'array'});
+      const firstSheet=workbook.Sheets[workbook.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(firstSheet,{header:1});
+      if(rows.length<2){alert('ไฟล์ว่างเปล่า');return}
+      let count=0;
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i];
+        if(!row[0]||!row[1])continue;
+        const code=String(row[0]).trim();
+        const name=String(row[1]).trim();
+        const gen=String(row[2]||'1').trim();
+        const phone=String(row[3]||'').trim();
+        if(!code||!name)continue;
+        if(!['1','2','3','4'].includes(gen))continue;
+        nurses.push({
+          id:'N'+Date.now()+'_'+i,
+          code,name,generation:gen,phone,
+          unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],
+          unavailableWeeks:[],unavailableMonths:[],
+          unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],
+          unavailableHolidays:[]
+        });
+        count++;
+      }
+      if(save()){renderNurses();updateInfo();alert('✅ Import สำเร็จ '+count+' คน')}
+    }catch(err){alert('❌ Import ไม่สำเร็จ: '+err.message)}
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+}
+function exportNursesExcel(){
+  if(nurses.length===0){alert('ไม่มีข้อมูล');return}
+  const data=[['รหัส','ชื่อ-นามสกุล','รุ่น','เบอร์โทร']];
+  nurses.forEach(n=>{data.push([n.code,n.name,'รุ่น '+n.generation,n.phone||''])});
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'พยาบาล');
+  XLSX.writeFile(wb,'nurses_'+currentMonth+'.xlsx');
+}
+
+// ============ HOLIDAYS ============
+function openHolidayModal(){
+  document.getElementById('holidayEditDate').value='';
+  document.getElementById('holidayDate').value='';
+  document.getElementById('holidayName').value='';
+  document.getElementById('holidayModalTitle').textContent='เพิ่มวันหยุด';
+  openModal('holidayModal');
+}
+function saveHoliday(){
+  const date=document.getElementById('holidayDate').value;
+  const name=document.getElementById('holidayName').value.trim();
+  if(!date||!name){alert('กรุณากรอกข้อมูลให้ครบ');return}
+  if(isOfficialHoliday(date)){alert('❌ วันที่นี้เป็นวันหยุดนักขัตฤกษ์อยู่แล้ว');return}
+  const editDate=document.getElementById('holidayEditDate').value;
+  if(editDate){
+    const idx=customHolidays.findIndex(h=>h.date===editDate);
+    if(idx>=0)customHolidays[idx]={date,name};
+  }else{
+    if(customHolidays.some(h=>h.date===date)){alert('❌ มีวันหยุดนี้อยู่แล้ว');return}
+    customHolidays.push({date,name});
+  }
+  customHolidays.sort((a,b)=>a.date.localeCompare(b.date));
+  if(save()){closeModal('holidayModal');renderHolidays();updateInfo();alert('✅ บันทึกวันหยุดสำเร็จ')}
+}
+function editHoliday(date){
+  const h=customHolidays.find(x=>x.date===date);
+  if(!h)return;
+  document.getElementById('holidayEditDate').value=h.date;
+  document.getElementById('holidayDate').value=h.date;
+  document.getElementById('holidayName').value=h.name;
+  document.getElementById('holidayModalTitle').textContent='แก้ไขวันหยุด';
+  openModal('holidayModal');
+}
+function deleteHoliday(date){
+  if(!confirm('ต้องการลบวันหยุดนี้?'))return;
+  customHolidays=customHolidays.filter(h=>h.date!==date);
+  if(save()){renderHolidays();updateInfo();alert('✅ ลบวันหยุดสำเร็จ')}
+}
+function renderHolidays(){
+  const year=document.getElementById('filterHolidayYear').value;
+  const filtered=customHolidays.filter(h=>h.date.startsWith(year));
+  document.getElementById('holidayTable').innerHTML=filtered.map(h=>{
+    const dow=WEEKDAY_TH[new Date(h.date).getDay()];
+    return `<tr><td><strong>${h.date}</strong></td><td>${dow}</td><td>${h.name}</td><td><button class="btn btn-sm btn-primary" onclick="editHoliday('${h.date}')">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteHoliday('${h.date}')">🗑️</button></td></tr>`;
+  }).join('')||'<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:30px">ยังไม่มีวันหยุดพิเศษในปี '+(parseInt(year)+543)+'</td></tr>';
+  
+  const official=OFFICIAL_HOLIDAYS[year]||[];
+  document.getElementById('officialHolidayTable').innerHTML=official.map(h=>{
+    const dow=WEEKDAY_TH[new Date(h.date).getDay()];
+    return `<tr><td><strong>${h.date}</strong></td><td>${dow} - ${h.name}</td></tr>`;
+  }).join('')||'<tr><td colspan="2" style="text-align:center;color:#94a3b8;padding:20px">ไม่มีข้อมูล</td></tr>';
+}
+
+// ============ CALENDAR ============
+function changeMonth(delta){
+  const[y,m]=currentMonth.split('-').map(Number);
+  const d=new Date(y,m-1+delta,1);
+  currentMonth=d.toISOString().slice(0,7);
+  document.getElementById('monthPicker').value=currentMonth;
+  renderCalendar();
+}
+function renderCalendar(){
+  const mp=document.getElementById('monthPicker');
+  if(!mp.value)mp.value=currentMonth;
+  currentMonth=mp.value;
+  const[y,m]=currentMonth.split('-').map(Number);
+  const firstDay=new Date(y,m-1,1);
+  const lastDay=new Date(y,m,0);
+  const startDow=firstDay.getDay();
+  const daysInMonth=lastDay.getDate();
+  document.getElementById('monthTitle').textContent=MONTH_TH[m-1]+' '+(y+543);
+  const cal=document.getElementById('calendar');
+  let html='';
+  WEEKDAY_TH.forEach((w,i)=>{html+='<div class="cal-header '+(i===0?'sun':'')+'">'+w+'</div>'});
+  for(let i=0;i<startDow;i++)html+='<div class="cal-day empty"></div>';
+  const today=formatDate(new Date());
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=currentMonth+'-'+String(d).padStart(2,'0');
+    const daySched=schedule[currentMonth]&&schedule[currentMonth][d];
+    const we=isWeekend(dateStr);
+    const hol=isHoliday(dateStr);
+    const isToday=dateStr===today;
+    let cls='cal-day';
+    if(we)cls+=' weekend';
+    if(hol)cls+=' holiday';
+    if(isToday)cls+=' today';
+    let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
+    if(daySched){
+      const getName=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name.split(' ')[0]:'?'};
+      const fmt=(arr)=>(arr||[]).map(getName).join(', ')||'-';
+      content+='<div class="shift-info"><span class="shift-label">เช้า:</span> <span class="nurse-name">'+fmt(daySched.morning)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">บ่าย:</span> <span class="nurse-name">'+fmt(daySched.afternoon)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmt(daySched.night)+'</span></div>';
+      if(daySched.preop_morning&&daySched.preop_morning.length){
+        content+='<div class="shift-info"><span class="shift-label">P-op เช้า:</span> <span class="nurse-name">'+fmt(daySched.preop_morning)+'</span></div>';
+      }
+      if(daySched.preop_afternoon&&daySched.preop_afternoon.length){
+        content+='<div class="shift-info"><span class="shift-label">P-op บ่าย:</span> <span class="nurse-name">'+fmt(daySched.preop_afternoon)+'</span></div>';
+      }
+      if(daySched.preop&&daySched.preop.length&&!daySched.preop_morning){
+        content+='<div class="shift-info"><span class="shift-label">Pre-op:</span> <span class="nurse-name">'+fmt(daySched.preop)+'</span></div>';
+      }
+    }else{content+='<div style="color:#94a3b8;font-size:9px;margin-top:3px">ยังไม่ได้จัดเวร</div>'}
+    html+='<div class="'+cls+'" onclick="showDayDetail(\''+dateStr+'\')">'+content+'</div>';
+  }
+  cal.innerHTML=html;
+}
+function showDayDetail(dateStr){
+  const[y,m,d]=dateStr.split('-');
+  const day=parseInt(d);
+  const mon=parseInt(m);
+  const daySched=schedule[currentMonth]&&schedule[currentMonth][day];
+  const we=isWeekend(dateStr);
+  const hol=isHoliday(dateStr);
+  const holName=getOfficialHolidayName(dateStr)||getCustomHolidayName(dateStr);
+  let title='📅 '+d+' '+MONTH_SHORT_TH[mon-1]+' '+(parseInt(y)+543)+' ('+WEEKDAY_TH[new Date(dateStr).getDay()]+')';
+  if(holName)title+=' 🎌 '+holName;
+  else if(we)title+=' 🛌 วันหยุดสุดสัปดาห์';
+  document.getElementById('dayModalTitle').textContent=title;
+  let html='';
+  if(!daySched){html='<div class="alert alert-warn">️ ยังไม่ได้จัดเวรในวันนี้</div>'}
+  else{
+    const shifts=[
+      {key:'morning',label:'🌅 กะเช้า',badge:'badge-morning'},
+      {key:'afternoon',label:'☀️ กะบ่าย',badge:'badge-afternoon'},
+      {key:'night',label:'🌙 กะดึก',badge:'badge-night'},
+      {key:'preop_morning',label:'🏥 Pre-op เช้า (วันหยุด)',badge:'badge-preop'},
+      {key:'preop_afternoon',label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop'},
+      {key:'preop',label:'🏥 Pre-op',badge:'badge-preop'}
+    ];
+    shifts.forEach(s=>{
+      const ids=daySched[s.key]||[];
+      if(ids.length){
+        html+='<div style="margin-bottom:12px"><div><span class="badge '+s.badge+'">'+s.label+'</span></div>';
+        ids.forEach(id=>{
+          const n=nurses.find(x=>x.id===id);
+          if(n)html+='<div style="padding:6px 10px;background:#f8fafc;border-radius:4px;margin-top:4px"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(n.phone?'📞 '+n.phone:'')+'</div>';
+        });
+        html+='</div>';
+      }
+    });
+  }
+  document.getElementById('dayModalContent').innerHTML=html;
+  openModal('dayModal');
+}
+
+// ============ AUTO SCHEDULE ============
+function autoSchedule(){
+  const month=document.getElementById('scheduleMonth').value||currentMonth;
+  if(nurses.length===0){alert('กรุณาเพิ่มข้อมูลพยาบาลก่อน');return}
+  const[y,m]=month.split('-').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  const monthSched={};
+  
+  const totalShifts={};
+  nurses.forEach(n=>totalShifts[n.id]=0);
+  Object.values(schedule).forEach(ms=>{
+    Object.values(ms).forEach(ds=>{
+      ['morning','afternoon','night','preop','preop_morning','preop_afternoon'].forEach(k=>{
+        (ds[k]||[]).forEach(id=>{if(totalShifts[id]!==undefined)totalShifts[id]++});
+      });
+    });
+  });
+  
+  let warnings=[];
+  
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=month+'-'+String(d).padStart(2,'0');
+    const offDay=isOffDay(dateStr);
+    const dow=new Date(dateStr).getDay();
+    const daySched={morning:[],afternoon:[],night:[],preop:[],preop_morning:[],preop_afternoon:[]};
+    
+    const unavailable=new Set();
+    nurses.forEach(n=>{
+      if(n.unavailableDates&&n.unavailableDates.includes(dateStr))unavailable.add(n.id);
+      if(n.unavailableHolidays&&n.unavailableHolidays.includes(dateStr))unavailable.add(n.id);
+      if(n.unavailableWeekdays&&n.unavailableWeekdays.includes(dow))unavailable.add(n.id);
+      if(n.unavailableWeeks){
+        const weekNum=getWeekNumber(dateStr);
+        const year=new Date(dateStr).getFullYear();
+        if(n.unavailableWeeks.some(w=>w.year===year&&w.week===weekNum))unavailable.add(n.id);
+      }
+      if(n.unavailableMonths&&n.unavailableMonths.includes(month))unavailable.add(n.id);
+    });
+    
+    const unavailableShifts={};
+    nurses.forEach(n=>{
+      if(n.unavailableShifts){
+        n.unavailableShifts.forEach(s=>{
+          if(s.date===dateStr){
+            if(!unavailableShifts[n.id])unavailableShifts[n.id]=new Set();
+            unavailableShifts[n.id].add(s.shift);
+          }
+        });
+      }
+      if(n.unavailableShiftsInWeeks){
+        const weekNum=getWeekNumber(dateStr);
+        const year=new Date(dateStr).getFullYear();
+        n.unavailableShiftsInWeeks.forEach(w=>{
+          if(w.year===year&&w.week===weekNum){
+            if(!unavailableShifts[n.id])unavailableShifts[n.id]=new Set();
+            unavailableShifts[n.id].add(w.shift);
+          }
+        });
+      }
+      if(n.unavailableShiftsInMonths){
+        n.unavailableShiftsInMonths.forEach(mo=>{
+          if(mo.month===month){
+            if(!unavailableShifts[n.id])unavailableShifts[n.id]=new Set();
+            unavailableShifts[n.id].add(mo.shift);
+          }
+        });
+      }
+    });
+    
+    const getAvailableByGen=(shiftType)=>{
+      const byGen={'1':[],'2':[],'3':[],'4':[]};
+      nurses.forEach(n=>{
+        if(unavailable.has(n.id))return;
+        if(unavailableShifts[n.id]&&unavailableShifts[n.id].has(shiftType))return;
+        byGen[n.generation].push(n);
+      });
+      Object.keys(byGen).forEach(g=>{byGen[g].sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0))});
+      return byGen;
+    };
+    
+    // Pre-op: วันหยุด = เช้า 1 คน + บ่าย 1 คน, วันธรรมดา = 1 คน
+    if(offDay){
+      const preopPool=getAvailableByGen('preop_morning');
+      if(preopPool['4'].length>0){
+        const preop=preopPool['4'].shift();
+        daySched.preop_morning.push(preop.id);
+        totalShifts[preop.id]++;
+      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op เช้า')}
+      
+      const preopPool2=getAvailableByGen('preop_afternoon');
+      if(preopPool2['4'].length>0){
+        const preop2=preopPool2['4'].shift();
+        daySched.preop_afternoon.push(preop2.id);
+        totalShifts[preop2.id]++;
+      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op บ่าย')}
+    }else{
+      const preopPool=getAvailableByGen('preop');
+      if(preopPool['4'].length>0){
+        const preop=preopPool['4'].shift();
+        daySched.preop.push(preop.id);
+        totalShifts[preop.id]++;
+      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op')}
+    }
+    
+    // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
+    const nightPool=getAvailableByGen('night');
+    const nightTeam=[];
+    ['1','2','3'].forEach(g=>{
+      if(nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
+    });
+    if(nightTeam.length<3){
+      const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
+      remaining.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+      while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
+    }
+    nightTeam.forEach(n=>{daySched.night.push(n.id);totalShifts[n.id]++});
+    
+    // กะเช้า: เฉพาะวันหยุด (2 ทีม)
+    if(offDay){
+      const morningPool=getAvailableByGen('morning');
+      const pool=[...morningPool['1'],...morningPool['2'],...morningPool['3']];
+      pool.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+      const team1=[],team2=[];
+      const usedGens1=new Set(),usedGens2=new Set();
+      pool.forEach(n=>{
+        if(team1.length<3&&!usedGens1.has(n.generation)){team1.push(n);usedGens1.add(n.generation)}
+        else if(team2.length<3&&!usedGens2.has(n.generation)){team2.push(n);usedGens2.add(n.generation)}
+      });
+      [...team1,...team2].forEach(n=>{daySched.morning.push(n.id);totalShifts[n.id]++});
+    }
+    
+    // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
+    const afternoonPool=getAvailableByGen('afternoon');
+    const aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
+    aftPool.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+    const aftTeam1=[],aftTeam2=[];
+    const aftGens1=new Set(),aftGens2=new Set();
+    aftPool.forEach(n=>{
+      if(aftTeam1.length<3&&!aftGens1.has(n.generation)){aftTeam1.push(n);aftGens1.add(n.generation)}
+      else if(aftTeam2.length<3&&!aftGens2.has(n.generation)){aftTeam2.push(n);aftGens2.add(n.generation)}
+    });
+    [...aftTeam1,...aftTeam2].forEach(n=>{daySched.afternoon.push(n.id);totalShifts[n.id]++});
+    
+    monthSched[d]=daySched;
+  }
+  
+  if(!schedule[month])schedule[month]={};
+  Object.assign(schedule[month],monthSched);
+  
+  if(save()){
+    let resultHtml='<div class="alert alert-success">✅ จัดเวรอัตโนมัติสำเร็จ!</div>';
+    const totalAssigned=Object.values(monthSched).reduce((sum,d)=>sum+(d.morning?.length||0)+(d.afternoon?.length||0)+(d.night?.length||0)+(d.preop?.length||0)+(d.preop_morning?.length||0)+(d.preop_afternoon?.length||0),0);
+    resultHtml+='<div class="alert alert-info">📊 จัดเวรทั้งหมด <strong>'+totalAssigned+'</strong> กะ-คน ใน '+daysInMonth+' วัน</div>';
+    if(warnings.length>0){resultHtml+='<div class="alert alert-warn">⚠️ <strong>คำเตือน:</strong><br>'+warnings.join('<br>')+'</div>'}
+    document.getElementById('scheduleResult').innerHTML=resultHtml;
+    alert('✅ จัดเวรอัตโนมัติสำเร็จ!\n\nจัดเวรทั้งหมด '+totalAssigned+' กะ-คน');
+  }
+}
+function clearSchedule(){
+  const month=document.getElementById('scheduleMonth').value||currentMonth;
+  if(!confirm('ต้องการล้างเวรเดือน '+month+' ?'))return;
+  delete schedule[month];
+  if(save()){document.getElementById('scheduleResult').innerHTML='<div class="alert alert-warn">🗑️ ล้างเวรเดือนนี้แล้ว</div>';alert('✅ ล้างเวรสำเร็จ')}
+}
+
+// ============ SWAP ============
+function renderSwapActions(){
+  const div=document.getElementById('swapActions');
+  if(!div)return;
+  const role=currentUser?currentUser.role:'requester';
+  let html='';
+  if(role==='requester'||role==='admin'){
+    html+='<button class="btn btn-primary" onclick="openSwapModal()">➕ สร้างคำขอแลกเวร</button>';
+  }
+  div.innerHTML=html;
+}
+function openSwapModal(){
+  if(nurses.length<2){alert('ต้องมีพยาบาลอย่างน้อย 2 คน');return}
+  const opts=nurses.map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+' (รุ่น '+n.generation+')</option>').join('');
+  document.getElementById('swapFrom').innerHTML=opts;
+  document.getElementById('swapTo').innerHTML=opts;
+  document.getElementById('swapDate').value='';
+  document.getElementById('swapDate2').value='';
+  document.getElementById('swapReason').value='';
+  openModal('swapModal');
+}
+function saveSwap(){
+  const from=document.getElementById('swapFrom').value;
+  const to=document.getElementById('swapTo').value;
+  const date=document.getElementById('swapDate').value;
+  const shift=document.getElementById('swapShift').value;
+  const date2=document.getElementById('swapDate2').value;
+  const reason=document.getElementById('swapReason').value;
+  if(!from||!to||!date){alert('กรุณากรอกข้อมูลให้ครบ');return}
+  if(from===to){alert('ผู้ขอและผู้รับแทนต้องเป็นคนละคน');return}
+  swaps.push({
+    id:'S'+Date.now(),
+    from:from,to:to,date:date,date2:date2||date,shift:shift,reason:reason,
+    status:'pending',
+    requestedBy:currentUser?currentUser.username:'unknown',
+    createdAt:new Date().toISOString()
+  });
+  if(save()){closeModal('swapModal');renderSwaps();updateInfo();alert('✅ ส่งคำขอแลกเวรแล้ว')}
+}
+function updateSwapStatus(id,status){
+  const s=swaps.find(x=>x.id===id);
+  if(!s)return;
+  if(status==='approved'){
+    const[y1,m1,d1]=s.date.split('-').map(Number);
+    const[y2,m2,d2]=s.date2.split('-').map(Number);
+    const month1=y1+'-'+String(m1).padStart(2,'0');
+    const month2=y2+'-'+String(m2).padStart(2,'0');
+    if(schedule[month1]&&schedule[month1][d1]&&schedule[month1][d1][s.shift]){
+      const arr=schedule[month1][d1][s.shift];
+      const idx=arr.indexOf(s.from);
+      if(idx>=0)arr[idx]=s.to;
+    }
+    if(s.date2!==s.date&&schedule[month2]&&schedule[month2][d2]&&schedule[month2][d2][s.shift]){
+      const arr=schedule[month2][d2][s.shift];
+      const idx=arr.indexOf(s.to);
+      if(idx>=0)arr[idx]=s.from;
+    }
+    s.approvedBy=currentUser?currentUser.username:'unknown';
+  }
+  s.status=status;
+  if(save()){renderSwaps();updateInfo()}
+}
+function deleteSwap(id){
+  if(!confirm('ลบคำขอนี้?'))return;
+  swaps=swaps.filter(s=>s.id!==id);
+  if(save()){renderSwaps();updateInfo()}
+}
+function renderSwaps(){
+  renderSwapActions();
+  const list=document.getElementById('swapList');
+  if(!list)return;
+  if(swaps.length===0){list.innerHTML='<div class="alert alert-info">ยังไม่มีคำขอแลกเวร</div>';return}
+  const role=currentUser?currentUser.role:'requester';
+  list.innerHTML=swaps.slice().reverse().map(s=>{
+    const from=nurses.find(n=>n.id===s.from);
+    const to=nurses.find(n=>n.id===s.to);
+    const shiftLabel=SHIFT_LABELS[s.shift]||s.shift;
+    const statusLabel={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ปฏิเสธ'}[s.status];
+    const canApprove=role==='admin'||role==='approver';
+    return `
+      <div class="swap-card ${s.status}">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div><strong>${from?from.name:'?'}</strong> ⇄ <strong>${to?to.name:'?'}</strong></div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px">📅 ${s.date} | ⏰ ${shiftLabel}${s.date2!==s.date?' → รับแทนวันที่ '+s.date2:''}</div>
+            ${s.reason?'<div style="font-size:11px;margin-top:3px">💬 '+s.reason+'</div>':''}
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: ${s.requestedBy||'-'}</div>
+            <div style="margin-top:5px"><span class="badge" style="background:#f1f5f9">${statusLabel}</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${s.status==='pending'&&canApprove?'<button class="btn btn-sm btn-success" onclick="updateSwapStatus(\''+s.id+'\',\'approved\')">✅ อนุมัติ</button><button class="btn btn-sm btn-danger" onclick="updateSwapStatus(\''+s.id+'\',\'rejected\')">❌ ปฏิเสธ</button>':''}
+            ${role==='admin'?'<button class="btn btn-sm btn-secondary" onclick="deleteSwap(\''+s.id+'\')">️</button>':''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============ STATS ============
+function renderStats(){
+  const month=document.getElementById('statsMonth').value||currentMonth;
+  document.getElementById('statsMonth').value=month;
+  const ms=schedule[month]||{};
+  const stats={};
+  nurses.forEach(n=>stats[n.id]={morning:0,afternoon:0,night:0,preop:0,preop_morning:0,preop_afternoon:0,total:0});
+  Object.values(ms).forEach(ds=>{
+    (ds.morning||[]).forEach(id=>{if(stats[id]){stats[id].morning++;stats[id].total++}});
+    (ds.afternoon||[]).forEach(id=>{if(stats[id]){stats[id].afternoon++;stats[id].total++}});
+    (ds.night||[]).forEach(id=>{if(stats[id]){stats[id].night++;stats[id].total++}});
+    (ds.preop||[]).forEach(id=>{if(stats[id]){stats[id].preop++;stats[id].total++}});
+    (ds.preop_morning||[]).forEach(id=>{if(stats[id]){stats[id].preop_morning++;stats[id].total++}});
+    (ds.preop_afternoon||[]).forEach(id=>{if(stats[id]){stats[id].preop_afternoon++;stats[id].total++}});
+  });
+  const grid=document.getElementById('statsGrid');
+  if(nurses.length===0){grid.innerHTML='<div class="alert alert-info">ยังไม่มีข้อมูลพยาบาล</div>';return}
+  grid.innerHTML=nurses.map(n=>{
+    const s=stats[n.id];
+    return `
+      <div class="stat-card">
+        <div class="name">${n.name} <span class="badge badge-gen${n.generation}">รุ่น ${n.generation}</span></div>
+        <div class="total">${s.total} กะ</div>
+        <div class="details">
+          🌅 เช้า: ${s.morning} | ☀️ บ่าย: ${s.afternoon}<br>
+          🌙 ดึก: ${s.night} | 🏥 Pre-op: ${s.preop+s.preop_morning+s.preop_afternoon}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============ USERS ============
+function openUserModal(username){
+  document.getElementById('editUsername').value='';
+  document.getElementById('userUsername').value='';
+  document.getElementById('userPassword').value='';
+  document.getElementById('userFullname').value='';
+  document.getElementById('userRole').value='requester';
+  document.getElementById('userModalTitle').textContent='เพิ่มผู้ใช้';
+  document.getElementById('userLineRow').style.display='none';
+  if(username){
+    const u=users.find(x=>x.username===username);
+    if(u){
+      document.getElementById('editUsername').value=u.username;
+      document.getElementById('userUsername').value=u.username;
+      document.getElementById('userPassword').value=u.password;
+      document.getElementById('userFullname').value=u.fullname;
+      document.getElementById('userRole').value=u.role;
+      document.getElementById('userModalTitle').textContent='แก้ไขผู้ใช้';
+      document.getElementById('userLineRow').style.display='';
+      document.getElementById('userLineStatus').textContent=u.lineUserId?('✅ เชื่อมต่อแล้ว ('+u.lineUserId.slice(0,10)+'…)'):'ยังไม่ได้เชื่อม — ให้ผู้ใช้กด "เชื่อมบัญชี LINE" เองหลังล็อกอินด้วยรหัสผ่าน';
+    }
+  }
+  openModal('userModal');
+}
+function saveUser(){
+  const editUsername=document.getElementById('editUsername').value;
+  const username=document.getElementById('userUsername').value.trim();
+  const password=document.getElementById('userPassword').value;
+  const fullname=document.getElementById('userFullname').value.trim();
+  const role=document.getElementById('userRole').value;
+  if(!username||!password||!fullname){alert('กรุณากรอกข้อมูลให้ครบ');return}
+  if(editUsername){
+    const u=users.find(x=>x.username===editUsername);
+    if(u){
+      u.username=username;u.password=password;u.fullname=fullname;u.role=role;
+      if(currentUser&&currentUser.username===editUsername){currentUser=u;save()}
+    }
+  }else{
+    if(users.find(x=>x.username===username)){alert('❌ ชื่อผู้ใช้นี้มีอยู่แล้ว');return}
+    users.push({username,password,fullname,role});
+  }
+  if(save()){closeModal('userModal');renderUsers();updateInfo();alert('✅ บันทึกผู้ใช้สำเร็จ')}
+}
+function deleteUser(username){
+  if(username==='admin'){alert('❌ ไม่สามารถลบ admin ได้');return}
+  if(!confirm('ต้องการลบผู้ใช้นี้?'))return;
+  users=users.filter(u=>u.username!==username);
+  if(save()){renderUsers();updateInfo();alert('✅ ลบผู้ใช้สำเร็จ')}
+}
+function renderUsers(){
+  const tbody=document.getElementById('userTable');
+  if(!tbody)return;
+  tbody.innerHTML=users.map(u=>`
+    <tr>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.fullname}</td>
+      <td><span class="badge badge-role-${u.role}">${ROLE_LABELS[u.role]}</span></td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="openUserModal('${u.username}')">✏️</button>
+        ${u.username!=='admin'?'<button class="btn btn-sm btn-danger" onclick="deleteUser(\''+u.username+'\')">🗑️</button>':''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ============ PDF/CSV EXPORT ============
+function exportPDF(){
+  try{
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('landscape','mm','a4');
+    const[y,m]=currentMonth.split('-').map(Number);
+    const daysInMonth=new Date(y,m,0).getDate();
+    doc.setFontSize(16);
+    doc.text('ตารางเวรพยาบาล - โรงพยาบาลลำพูน',14,15);
+    doc.setFontSize(12);
+    doc.text('ประจำเดือน'+MONTH_TH[m-1]+' '+(y+543),14,22);
+    const head=[['วันที่','วัน','กะเช้า','กะบ่าย','กะดึก','Pre-op']];
+    const body=[];
+    const getName=(id)=>nurses.find(n=>n.id===id)?.name||'-';
+    const formatList=(arr)=>(arr||[]).map(getName).join(', ')||'-';
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=currentMonth+'-'+String(d).padStart(2,'0');
+      const dow=new Date(dateStr).getDay();
+      const ds=schedule[currentMonth]&&schedule[currentMonth][d];
+      let dayLabel=WEEKDAY_TH[dow];
+      if(isHoliday(dateStr))dayLabel+=' 🎌';
+      else if(isWeekend(dateStr))dayLabel+=' (หยุด)';
+      const preopList=ds?(formatList(ds.preop_morning)||formatList(ds.preop_afternoon)||formatList(ds.preop)):'-';
+      body.push([d,dayLabel,ds?formatList(ds.morning):'-',ds?formatList(ds.afternoon):'-',ds?formatList(ds.night):'-',preopList]);
+    }
+    doc.autoTable({head,body,startY:28,styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[30,64,175],textColor:255},alternateRowStyles:{fillColor:[248,250,252]},columnStyles:{0:{cellWidth:12},1:{cellWidth:25}}});
+    doc.save('schedule_'+currentMonth+'.pdf');
+  }catch(e){alert('❌ Export PDF ไม่สำเร็จ: '+e.message)}
+}
+function exportCSV(){
+  try{
+    const[y,m]=currentMonth.split('-').map(Number);
+    const daysInMonth=new Date(y,m,0).getDate();
+    const getName=(id)=>nurses.find(n=>n.id===id)?.name||'-';
+    let csv='วันที่,วัน,กะเช้า,กะบ่าย,กะดึก,Pre-op\n';
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=currentMonth+'-'+String(d).padStart(2,'0');
+      const dow=WEEKDAY_TH[new Date(dateStr).getDay()];
+      const ds=schedule[currentMonth]&&schedule[currentMonth][d];
+      const fmt=(arr)=>'"'+((arr||[]).map(getName).join(', ')||'-')+'"';
+      const preopList=ds?(fmt(ds.preop_morning)||fmt(ds.preop_afternoon)||fmt(ds.preop)):'"-"';
+      csv+=d+','+dow+','+fmt(ds?.morning)+','+fmt(ds?.afternoon)+','+fmt(ds?.night)+','+preopList+'\n';
+    }
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download='schedule_'+currentMonth+'.csv';
+    link.click();
+  }catch(e){alert('❌ Export CSV ไม่สำเร็จ: '+e.message)}
+}
+
+// ============ SETTINGS ============
+function exportData(){
+  try{
+    const data={nurses,schedule,swaps,customHolidays,users,exportedAt:new Date().toISOString()};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download='nurse_schedule_backup_'+formatDate(new Date())+'.json';
+    link.click();
+  }catch(e){alert(' Export ไม่สำเร็จ: '+e.message)}
+}
+function importData(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!confirm('การ Import จะแทนที่ข้อมูลปัจจุบัน ต้องการดำเนินการต่อ?'))return;
+      nurses=data.nurses||[];schedule=data.schedule||{};swaps=data.swaps||[];
+      customHolidays=data.customHolidays||[];users=data.users||users;
+      if(save()){renderNurses();renderUsers();updateInfo();alert('✅ Import สำเร็จ')}
+    }catch(err){alert('❌ ไฟล์ไม่ถูกต้อง: '+err.message)}
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(!confirm('⚠️ ต้องการลบข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้!'))return;
+  if(!confirm('ยืนยันอีกครั้ง: ลบข้อมูลทั้งหมด?'))return;
+  nurses=[];schedule={};swaps=[];customHolidays=[];
+  if(save()){renderNurses();updateInfo();alert('🗑️ รีเซ็ตข้อมูลเรียบร้อย')}
+}
+function updateInfo(){
+  document.getElementById('infoNurses').textContent=nurses.length;
+  document.getElementById('infoMonths').textContent=Object.keys(schedule).length;
+  document.getElementById('infoSwaps').textContent=swaps.length;
+  document.getElementById('infoHolidays').textContent=customHolidays.length;
+  document.getElementById('infoUsers').textContent=users.length;
+}
+
+// ============ SAMPLE DATA ============
+function loadSampleData(){
+  if(nurses.length>0&&!confirm('⚠️ มีข้อมูลอยู่แล้ว การโหลดข้อมูลตัวอย่างจะแทนที่ข้อมูลปัจจุบัน ต้องการดำเนินการต่อ?'))return;
+  nurses=[
+    {id:'N1',code:'N001',name:'พญ.พรรณพิมล ติงสะถิตย์',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N2',code:'N002',name:'ณัฏฐ์พัชร์',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N3',code:'N003',name:'ออม',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N4',code:'N004',name:'น.ส.ไพลิน อินทร',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N5',code:'N005',name:'น.ส.ศิริกมล ห้วยแก้ว',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N6',code:'N006',name:'น.ส.สุกานดา สิงห์โตนะคา',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N7',code:'N007',name:'นส.นิลดา วงศ์พัฒนา',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N8',code:'N008',name:'นส.ดาราวดี เสน่ห์',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N9',code:'N009',name:'นส.ศิริลักษณ์ กองทอง',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N10',code:'N010',name:'นส.ดลจิตร รังวิจิตร',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N11',code:'N011',name:'นางภัทรวดา ปาละ',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N12',code:'N012',name:'นส.อรพรรณ ศรีวิชัย',generation:'1',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N13',code:'N013',name:'นส.นิลยา สุชาติ',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N14',code:'N014',name:'นส.ธิดาภรณ์ ปั้นศิริ',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N15',code:'N015',name:'นส.อัญชลี มั่งคั่ง',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N16',code:'N016',name:'นส.จารุวรรณ กิติมะ',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N17',code:'N017',name:'นส.อัจฉรา คงทน',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N18',code:'N018',name:'นส.รัตนาภรณ์ ขัดสี',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N19',code:'N019',name:'นางปิ่นเงิน กิจเจริญ',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N20',code:'N020',name:'นส.อรอุษา ชาติอยู่',generation:'2',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N21',code:'N021',name:'น.ส.สมฤดี บัวทอง',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N22',code:'N022',name:'น.ส.สุกัลยา ใจบุญ',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N23',code:'N023',name:'น.ส.วรฉันท์ ไชยพรหม',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N24',code:'N024',name:'น.ส.รัชนี โปรชาตินิ',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N25',code:'N025',name:'น.ส.รัชนี โปรชาตินิ 2',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N26',code:'N026',name:'น.ส.พิตยา นุภาส',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N27',code:'N027',name:'นส.ฐิติมา ไชยนาวก',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N28',code:'N028',name:'นส.ชยวิฐ ราวทัน',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N29',code:'N029',name:'นายภาณุพงศ์ สำลี',generation:'3',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N31',code:'N031',name:'นส.เกตุธิิดา อาจาคำ',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N32',code:'N032',name:'นส.ธิดารัตน์ กันทะวงค์',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N33',code:'N033',name:'นส.สุสดี ดวงคำ',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N34',code:'N034',name:'นส.นพปวรรณรินทร์ อินทะจักร',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N35',code:'N035',name:'นายพงศ์ศักดิ คำติยะ',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N36',code:'N036',name:'นส.รัตนาภรณ์ สุวรรณศรี',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N37',code:'N037',name:'นส.จิรัญญา สมใจ',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N38',code:'N038',name:'นส.ณัฏฐธิดา เกิดเจริญ',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N39',code:'N039',name:'นส.ลลิดา กองเรียง',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N40',code:'N040',name:'นส.อมลรดา จุมปาสี',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N41',code:'N041',name:'นส.อาชิรพรณ์ สุภามงคล',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]},
+    {id:'N42',code:'N042',name:'นส.อัญชรา อริวันนา',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]}
+  ];
+  if(save()){renderNurses();updateInfo();alert('✅ โหลดข้อมูลตัวอย่าง 42 คนสำเร็จ (รุ่น 1: 12 คน, รุ่น 2: 8 คน, รุ่น 3: 9 คน, รุ่น 4: 12 คน)')}
+}
+
+// ============ INIT ============
+window.onload=async function(){
+  showLoginNotice();
+  try{
+    const me=await fetch('/auth/me').then(r=>r.json());
+    if(me.loggedIn){
+      currentUser={username:me.username,fullname:me.fullname,role:me.role};
+    }
+  }catch(e){console.warn('/auth/me check failed:',e.message)}
+  await cloudPull(false);
+  checkLogin();
+};
+</script>
+</body>
+</html>
