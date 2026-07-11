@@ -189,7 +189,9 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .cal-day.has-duty{border-color:var(--primary);background:var(--primary-light);box-shadow:inset 0 0 0 1px var(--primary-tint)}
 .cal-day.has-duty:hover{box-shadow:inset 0 0 0 1px var(--primary-tint),var(--shadow-sm)}
 .cal-day.off-duty{opacity:.55}
+.cal-day.office-day{background:#f7fbfa;border-color:var(--line-strong)}
 .duty-chip{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9.5px;font-weight:700;margin:3px 3px 0 0;line-height:1.4}
+.duty-chip.office{background:#eef4f2;color:var(--ink-soft);border:1px dashed var(--line-strong)}
 .cal-day .duty-none{color:var(--ink-mute);font-size:9.5px;margin-top:5px;font-weight:600}
 </style>
 </head>
@@ -262,7 +264,8 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
           <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
           <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
           <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
-          <div class="legend-item"><div class="legend-box" style="background:#ccfbf1;border:1px solid #0d9488"></div> วันที่มีเวร</div>
+          <div class="legend-item"><div class="legend-box" style="background:#eef4f2;border:1px dashed #cddedb"></div> เช้าทำการ (จ-ศ)</div>
+          <div class="legend-item">📞 ดึก On call</div>
         </div>
         <div class="calendar" id="homeCalendar"></div>
       </div>
@@ -1502,20 +1505,25 @@ function renderHomeCalendarPerson(nurse){
     const dateStr=homeMonth+'-'+String(d).padStart(2,'0');
     const ds=ms[d];
     const we=isWeekend(dateStr),hol=isHoliday(dateStr),isToday=dateStr===today;
+    const isWorkday=!we&&!hol; // จันทร์-ศุกร์ ที่ไม่ใช่วันหยุดนักขัตฤกษ์
     const myShifts=ds?Object.keys(HOME_SHIFT_META).filter(k=>(ds[k]||[]).includes(nurse.id)):[];
+    const isNightOncall=ds&&(ds.night_oncall||[]).includes(nurse.id);
     let cls='cal-day';
     if(we)cls+=' weekend';
     if(hol)cls+=' holiday';
     if(myShifts.length)cls+=' has-duty';
-    else if(ds)cls+=' off-duty';
+    else if(isWorkday)cls+=' office-day';
     if(isToday)cls+=' today';
     let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
     if(myShifts.length){
-      content+='<div>'+myShifts.map(k=>'<span class="duty-chip badge '+HOME_SHIFT_META[k].c+'">'+HOME_SHIFT_META[k].l+'</span>').join('')+'</div>';
-    }else if(ds){
-      content+='<div class="duty-none">หยุด</div>';
+      content+='<div>'+myShifts.map(k=>{
+        const label=(k==='night'&&isNightOncall)?'ดึก 📞':HOME_SHIFT_META[k].l;
+        return '<span class="duty-chip badge '+HOME_SHIFT_META[k].c+'">'+label+'</span>';
+      }).join('')+'</div>';
+    }else if(isWorkday){
+      content+='<div><span class="duty-chip office">เช้าทำการ</span></div>';
     }else{
-      content+='<div class="duty-none">–</div>';
+      content+='<div class="duty-none">หยุด</div>';
     }
     html+='<div class="'+cls+'" onclick="showHomeDayDetail(\''+dateStr+'\')">'+content+'</div>';
   }
@@ -1542,9 +1550,11 @@ function renderHomeCalendarAll(){
     if(isToday)cls+=' today';
     let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
     if(ds){
+      const oncall=ds.night_oncall||[];
+      const fmtNight=(arr)=>(arr||[]).map(id=>getName(id)+(oncall.includes(id)?'📞':'')).join(', ')||'-';
       content+='<div class="shift-info"><span class="shift-label">เช้า:</span> <span class="nurse-name">'+fmt(ds.morning)+'</span></div>';
       content+='<div class="shift-info"><span class="shift-label">บ่าย:</span> <span class="nurse-name">'+fmt(ds.afternoon)+'</span></div>';
-      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmt(ds.night)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmtNight(ds.night)+'</span></div>';
       if(ds.preop_morning&&ds.preop_morning.length)content+='<div class="shift-info"><span class="shift-label">P-op เช้า:</span> <span class="nurse-name">'+fmt(ds.preop_morning)+'</span></div>';
       if(ds.preop_afternoon&&ds.preop_afternoon.length)content+='<div class="shift-info"><span class="shift-label">P-op บ่าย:</span> <span class="nurse-name">'+fmt(ds.preop_afternoon)+'</span></div>';
       if(ds.preop&&ds.preop.length&&!ds.preop_morning)content+='<div class="shift-info"><span class="shift-label">Pre-op:</span> <span class="nurse-name">'+fmt(ds.preop)+'</span></div>';
@@ -1584,11 +1594,13 @@ function renderCalendar(){
     if(isToday)cls+=' today';
     let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
     if(daySched){
+      const oncall=daySched.night_oncall||[];
       const getName=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name.split(' ')[0]:'?'};
       const fmt=(arr)=>(arr||[]).map(getName).join(', ')||'-';
+      const fmtNight=(arr)=>(arr||[]).map(id=>getName(id)+(oncall.includes(id)?'📞':'')).join(', ')||'-';
       content+='<div class="shift-info"><span class="shift-label">เช้า:</span> <span class="nurse-name">'+fmt(daySched.morning)+'</span></div>';
       content+='<div class="shift-info"><span class="shift-label">บ่าย:</span> <span class="nurse-name">'+fmt(daySched.afternoon)+'</span></div>';
-      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmt(daySched.night)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmtNight(daySched.night)+'</span></div>';
       if(daySched.preop_morning&&daySched.preop_morning.length){
         content+='<div class="shift-info"><span class="shift-label">P-op เช้า:</span> <span class="nurse-name">'+fmt(daySched.preop_morning)+'</span></div>';
       }
@@ -1626,13 +1638,15 @@ function showDayDetail(dateStr){
       {key:'preop_afternoon',label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop'},
       {key:'preop',label:'🏥 Pre-op',badge:'badge-preop'}
     ];
+    const oncall=daySched.night_oncall||[];
     shifts.forEach(s=>{
       const ids=daySched[s.key]||[];
       if(ids.length){
         html+='<div style="margin-bottom:12px"><div><span class="badge '+s.badge+'">'+s.label+'</span></div>';
         ids.forEach(id=>{
           const n=nurses.find(x=>x.id===id);
-          if(n)html+='<div style="padding:6px 10px;background:#f8fafc;border-radius:4px;margin-top:4px"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(n.phone?'📞 '+n.phone:'')+'</div>';
+          const isOncall=s.key==='night'&&oncall.includes(id);
+          if(n)html+='<div style="padding:6px 10px;background:'+(isOncall?'#fff5e6':'#f8fafc')+';border-radius:4px;margin-top:4px'+(isOncall?';border-left:3px solid var(--warning)':'')+'"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(isOncall?'<span class="badge" style="background:var(--warning);color:#fff">📞 On call</span> ':'')+(n.phone?'📞 '+n.phone:'')+'</div>';
         });
         html+='</div>';
       }
@@ -1650,23 +1664,30 @@ function autoSchedule(){
   const daysInMonth=new Date(y,m,0).getDate();
   const monthSched={};
   
+  // นับภาระงานสะสม: total = รวมทุกกะ, byType = แยกตามชนิดกะ (เพื่อเฉลี่ยแต่ละกะให้เท่ากัน)
+  const shiftTypeKey=(st)=>st.indexOf('preop')===0?'preop':st;
   const totalShifts={};
-  nurses.forEach(n=>totalShifts[n.id]=0);
+  const typeShifts={};
+  nurses.forEach(n=>{totalShifts[n.id]=0;typeShifts[n.id]={morning:0,afternoon:0,night:0,preop:0}});
   Object.values(schedule).forEach(ms=>{
     Object.values(ms).forEach(ds=>{
       ['morning','afternoon','night','preop','preop_morning','preop_afternoon'].forEach(k=>{
-        (ds[k]||[]).forEach(id=>{if(totalShifts[id]!==undefined)totalShifts[id]++});
+        (ds[k]||[]).forEach(id=>{
+          if(totalShifts[id]!==undefined){totalShifts[id]++;typeShifts[id][shiftTypeKey(k)]++}
+        });
       });
     });
   });
-  
+  // จัดคนเข้ากะ พร้อมอัปเดตตัวนับทั้งสอง
+  const assign=(n,shiftKey)=>{const tk=shiftTypeKey(shiftKey);totalShifts[n.id]++;typeShifts[n.id][tk]++};
+
   let warnings=[];
   
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=month+'-'+String(d).padStart(2,'0');
     const offDay=isOffDay(dateStr);
     const dow=new Date(dateStr).getDay();
-    const daySched={morning:[],afternoon:[],night:[],preop:[],preop_morning:[],preop_afternoon:[]};
+    const daySched={morning:[],afternoon:[],night:[],night_oncall:[],preop:[],preop_morning:[],preop_afternoon:[]};
     
     const unavailable=new Set();
     nurses.forEach(n=>{
@@ -1711,14 +1732,17 @@ function autoSchedule(){
       }
     });
     
+    // เรียงคนน้อยเวรของ "กะชนิดนี้" ขึ้นก่อน แล้วค่อยดูภาระรวม เพื่อเฉลี่ยแต่ละกะให้เท่ากันต่อคน
+    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||((totalShifts[a.id]||0)-(totalShifts[b.id]||0));
     const getAvailableByGen=(shiftType)=>{
+      const tk=shiftTypeKey(shiftType);
       const byGen={'1':[],'2':[],'3':[],'4':[]};
       nurses.forEach(n=>{
         if(unavailable.has(n.id))return;
         if(unavailableShifts[n.id]&&unavailableShifts[n.id].has(shiftType))return;
         byGen[n.generation].push(n);
       });
-      Object.keys(byGen).forEach(g=>{byGen[g].sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0))});
+      Object.keys(byGen).forEach(g=>{byGen[g].sort(cmpBy(tk))});
       return byGen;
     };
     
@@ -1728,24 +1752,24 @@ function autoSchedule(){
       if(preopPool['4'].length>0){
         const preop=preopPool['4'].shift();
         daySched.preop_morning.push(preop.id);
-        totalShifts[preop.id]++;
+        assign(preop,'preop_morning');
       }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op เช้า')}
-      
+
       const preopPool2=getAvailableByGen('preop_afternoon');
       if(preopPool2['4'].length>0){
         const preop2=preopPool2['4'].shift();
         daySched.preop_afternoon.push(preop2.id);
-        totalShifts[preop2.id]++;
+        assign(preop2,'preop_afternoon');
       }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op บ่าย')}
     }else{
       const preopPool=getAvailableByGen('preop');
       if(preopPool['4'].length>0){
         const preop=preopPool['4'].shift();
         daySched.preop.push(preop.id);
-        totalShifts[preop.id]++;
+        assign(preop,'preop');
       }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op')}
     }
-    
+
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
     const nightTeam=[];
@@ -1754,36 +1778,41 @@ function autoSchedule(){
     });
     if(nightTeam.length<3){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
-      remaining.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+      remaining.sort(cmpBy('night'));
       while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
     }
-    nightTeam.forEach(n=>{daySched.night.push(n.id);totalShifts[n.id]++});
-    
+    nightTeam.forEach(n=>{daySched.night.push(n.id);assign(n,'night')});
+    // สุ่ม 1 ใน 3 คนของกะดึกให้เป็น "ดึก On call" ของกะนั้น
+    if(nightTeam.length>0){
+      const oc=nightTeam[Math.floor(Math.random()*nightTeam.length)];
+      daySched.night_oncall.push(oc.id);
+    }
+
     // กะเช้า: เฉพาะวันหยุด (2 ทีม)
     if(offDay){
       const morningPool=getAvailableByGen('morning');
       const pool=[...morningPool['1'],...morningPool['2'],...morningPool['3']];
-      pool.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+      pool.sort(cmpBy('morning'));
       const team1=[],team2=[];
       const usedGens1=new Set(),usedGens2=new Set();
       pool.forEach(n=>{
         if(team1.length<3&&!usedGens1.has(n.generation)){team1.push(n);usedGens1.add(n.generation)}
         else if(team2.length<3&&!usedGens2.has(n.generation)){team2.push(n);usedGens2.add(n.generation)}
       });
-      [...team1,...team2].forEach(n=>{daySched.morning.push(n.id);totalShifts[n.id]++});
+      [...team1,...team2].forEach(n=>{daySched.morning.push(n.id);assign(n,'morning')});
     }
-    
+
     // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
     const afternoonPool=getAvailableByGen('afternoon');
     const aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
-    aftPool.sort((a,b)=>(totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+    aftPool.sort(cmpBy('afternoon'));
     const aftTeam1=[],aftTeam2=[];
     const aftGens1=new Set(),aftGens2=new Set();
     aftPool.forEach(n=>{
       if(aftTeam1.length<3&&!aftGens1.has(n.generation)){aftTeam1.push(n);aftGens1.add(n.generation)}
       else if(aftTeam2.length<3&&!aftGens2.has(n.generation)){aftTeam2.push(n);aftGens2.add(n.generation)}
     });
-    [...aftTeam1,...aftTeam2].forEach(n=>{daySched.afternoon.push(n.id);totalShifts[n.id]++});
+    [...aftTeam1,...aftTeam2].forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon')});
     
     monthSched[d]=daySched;
   }
@@ -1911,16 +1940,32 @@ function renderStats(){
   const month=document.getElementById('statsMonth').value||currentMonth;
   document.getElementById('statsMonth').value=month;
   const ms=schedule[month]||{};
+  const[sy,sm]=month.split('-').map(Number);
+  const daysInMonth=new Date(sy,sm,0).getDate();
   const stats={};
-  nurses.forEach(n=>stats[n.id]={morning:0,afternoon:0,night:0,preop:0,preop_morning:0,preop_afternoon:0,total:0});
-  Object.values(ms).forEach(ds=>{
-    (ds.morning||[]).forEach(id=>{if(stats[id]){stats[id].morning++;stats[id].total++}});
-    (ds.afternoon||[]).forEach(id=>{if(stats[id]){stats[id].afternoon++;stats[id].total++}});
-    (ds.night||[]).forEach(id=>{if(stats[id]){stats[id].night++;stats[id].total++}});
-    (ds.preop||[]).forEach(id=>{if(stats[id]){stats[id].preop++;stats[id].total++}});
-    (ds.preop_morning||[]).forEach(id=>{if(stats[id]){stats[id].preop_morning++;stats[id].total++}});
-    (ds.preop_afternoon||[]).forEach(id=>{if(stats[id]){stats[id].preop_afternoon++;stats[id].total++}});
-  });
+  nurses.forEach(n=>stats[n.id]={morning:0,afternoon:0,night:0,night_oncall:0,preop:0,preop_morning:0,preop_afternoon:0,total:0,daysWorked:0,restDays:0,workedOnOff:0,offTotal:0});
+  // นับแยกตามวัน เพื่อคำนวณ "วันเข้าเวร / วันหยุด" ของแต่ละคน
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=month+'-'+String(d).padStart(2,'0');
+    const ds=ms[d];
+    const off=isOffDay(dateStr); // เสาร์-อาทิตย์ หรือ วันหยุดนักขัตฤกษ์
+    if(off)nurses.forEach(n=>stats[n.id].offTotal++);
+    const workedToday=new Set();
+    if(ds){
+      (ds.morning||[]).forEach(id=>{if(stats[id]){stats[id].morning++;stats[id].total++;workedToday.add(id)}});
+      (ds.afternoon||[]).forEach(id=>{if(stats[id]){stats[id].afternoon++;stats[id].total++;workedToday.add(id)}});
+      (ds.night||[]).forEach(id=>{if(stats[id]){stats[id].night++;stats[id].total++;workedToday.add(id)}});
+      (ds.night_oncall||[]).forEach(id=>{if(stats[id])stats[id].night_oncall++});
+      (ds.preop||[]).forEach(id=>{if(stats[id]){stats[id].preop++;stats[id].total++;workedToday.add(id)}});
+      (ds.preop_morning||[]).forEach(id=>{if(stats[id]){stats[id].preop_morning++;stats[id].total++;workedToday.add(id)}});
+      (ds.preop_afternoon||[]).forEach(id=>{if(stats[id]){stats[id].preop_afternoon++;stats[id].total++;workedToday.add(id)}});
+    }
+    nurses.forEach(n=>{
+      const worked=workedToday.has(n.id);
+      if(worked)stats[n.id].daysWorked++;
+      if(off){if(worked)stats[n.id].workedOnOff++;else stats[n.id].restDays++}
+    });
+  }
   const grid=document.getElementById('statsGrid');
   if(nurses.length===0){grid.innerHTML='<div class="alert alert-info">ยังไม่มีข้อมูลพยาบาล</div>';return}
   grid.innerHTML=nurses.map(n=>{
@@ -1931,7 +1976,11 @@ function renderStats(){
         <div class="total">${s.total} กะ</div>
         <div class="details">
           🌅 เช้า: ${s.morning} | ☀️ บ่าย: ${s.afternoon}<br>
-          🌙 ดึก: ${s.night} | 🏥 Pre-op: ${s.preop+s.preop_morning+s.preop_afternoon}
+          🌙 ดึก: ${s.night}${s.night_oncall?` <span title="ดึก On call">(📞${s.night_oncall})</span>`:''} | 🏥 Pre-op: ${s.preop+s.preop_morning+s.preop_afternoon}
+        </div>
+        <div class="details" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)">
+          📅 วันเข้าเวร: <strong>${s.daysWorked}</strong> | 🛌 วันหยุดพัก: <strong>${s.restDays}</strong><br>
+          🎌 เข้าเวรวันหยุด: ${s.workedOnOff} / ${s.offTotal} วันหยุด
         </div>
       </div>
     `;
