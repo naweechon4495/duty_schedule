@@ -310,6 +310,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
           <button class="btn btn-secondary" onclick="changeMonth(1)">▶</button>
           <button class="btn btn-success" onclick="exportPDF()">📄 PDF</button>
           <button class="btn btn-warning" onclick="exportCSV()">📊 CSV</button>
+          <button class="btn btn-primary" onclick="exportScheduleMatrix()">📗 Excel (ตาราง)</button>
           <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="monthTitle"></span>
         </div>
         <div class="legend">
@@ -2101,6 +2102,66 @@ function exportCSV(){
     link.download='schedule_'+currentMonth+'.csv';
     link.click();
   }catch(e){alert('❌ Export CSV ไม่สำเร็จ: '+e.message)}
+}
+// Export ตารางเวรแบบกริด (แถว=พยาบาล / คอลัมน์=วันที่) เปิดใน Excel พร้อมสีไฮไลต์วันหยุด
+// ใช้ HTML-table -> .xls เพราะ SheetJS ตัวฟรีเขียนสีพื้นเซลล์ลง .xlsx ไม่ได้
+function exportScheduleMatrix(){
+  try{
+    const[y,m]=currentMonth.split('-').map(Number);
+    const daysInMonth=new Date(y,m,0).getDate();
+    const ms=schedule[currentMonth]||{};
+    if(nurses.length===0){alert('⚠️ ยังไม่มีข้อมูลพยาบาล');return}
+    const cellCode=(ds,id,dateStr)=>{
+      if(ds){
+        const mi=(ds.morning||[]).indexOf(id);if(mi>=0)return mi<3?'ช':'ช2';
+        const ai=(ds.afternoon||[]).indexOf(id);if(ai>=0)return ai<3?'บ':'บ2';
+        if((ds.night||[]).includes(id))return (ds.night_oncall||[]).includes(id)?'ดot':'ด';
+        if((ds.preop_morning||[]).includes(id))return 'ผช';
+        if((ds.preop_afternoon||[]).includes(id))return 'ผบ';
+        if((ds.preop||[]).includes(id))return 'ผ';
+      }
+      const dw=new Date(dateStr).getDay();
+      if(dw!==0&&dw!==6&&!isHoliday(dateStr))return 'x'; // จ-ศ ไม่ใช่วันหยุด = เวรเช้าทำการ
+      return '';
+    };
+    const dayMeta=[];
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=currentMonth+'-'+String(d).padStart(2,'0');
+      const dw=new Date(dateStr).getDay();
+      const hol=isHoliday(dateStr),wknd=(dw===0||dw===6);
+      dayMeta.push({d,dateStr,dw,hol,wknd,
+        headBg:hol?'#FFC000':(wknd?'#D9D9D9':'#F2F2F2'),
+        colBg:hol?'#FFF2CC':(wknd?'#F2F2F2':'')});
+    }
+    const bd='border:0.5px solid #999;';const ctr='text-align:center;';
+    const totalCols=2+daysInMonth;
+    const dowShort=['อา','จ','อ','พ','พฤ','ศ','ส'];
+    let h='<table style="border-collapse:collapse;font-family:Sarabun,sans-serif;font-size:11px">';
+    h+='<tr><td colspan="'+totalCols+'" style="'+bd+ctr+'font-weight:bold;font-size:14px;padding:6px">เดือน '+MONTH_TH[m-1]+' '+String((y+543)%100).padStart(2,'0')+'</td></tr>';
+    h+='<tr><td style="'+bd+ctr+'font-weight:bold;background:#F2F2F2">ลำดับ</td><td style="'+bd+'font-weight:bold;background:#F2F2F2;min-width:130px">ชื่อ-นามสกุล</td>';
+    dayMeta.forEach(dm=>{h+='<td style="'+bd+ctr+'font-weight:bold;background:'+dm.headBg+';min-width:26px">'+dm.d+'</td>'});
+    h+='</tr>';
+    h+='<tr><td style="'+bd+'background:#F2F2F2"></td><td style="'+bd+'background:#F2F2F2"></td>';
+    dayMeta.forEach(dm=>{h+='<td style="'+bd+ctr+'font-size:9px;color:#555;background:'+dm.headBg+'">'+dowShort[dm.dw]+'</td>'});
+    h+='</tr>';
+    nurses.forEach((n,i)=>{
+      h+='<tr><td style="'+bd+ctr+'">'+(i+1)+'</td><td style="'+bd+'padding:2px 5px">'+n.name+'</td>';
+      dayMeta.forEach(dm=>{
+        const code=cellCode(ms[dm.d],n.id,dm.dateStr);
+        h+='<td style="'+bd+ctr+(dm.colBg?'background:'+dm.colBg+';':'')+'">'+code+'</td>';
+      });
+      h+='</tr>';
+    });
+    h+='<tr><td colspan="'+totalCols+'" style="'+bd+'font-size:10px;padding:5px">คำอธิบาย: ช=เช้า, ช2=เช้าทีม2, บ=บ่าย, บ2=บ่ายทีม2, ด=ดึก, ดot=ดึก On call, ผ=Pre-op, ผช=Pre-op เช้า, ผบ=Pre-op บ่าย, x=เวรเช้าทำการ (จ-ศ) | สีส้ม=วันหยุดนักขัตฤกษ์, สีเทา=เสาร์-อาทิตย์</td></tr>';
+    h+='</table>';
+    const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ตารางเวร</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>'+h+'</body></html>';
+    const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download='ตารางเวร_'+currentMonth+'.xls';
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(link.href),1500);
+  }catch(e){alert('❌ Export Excel ไม่สำเร็จ: '+e.message)}
 }
 
 // ============ SETTINGS ============
