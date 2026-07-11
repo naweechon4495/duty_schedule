@@ -172,6 +172,25 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
 @keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(24px)}}
 @media(max-width:480px){.toast-container{left:12px;right:12px;top:12px;max-width:none}}
+.home-hero{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px;padding:14px 16px;background:linear-gradient(135deg,var(--primary-light),#fff);border:1px solid var(--line);border-radius:var(--radius-md)}
+.home-hero .avatar{width:46px;height:46px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.home-hero .who{line-height:1.3}
+.home-hero .who .nm{font-weight:800;font-size:15px;color:var(--ink)}
+.home-hero .who .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.duty-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:9px;margin-bottom:14px}
+.duty-stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:11px 8px;text-align:center;border-top:3px solid var(--primary);transition:transform .15s,box-shadow .15s}
+.duty-stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.duty-stat .num{font-size:23px;font-weight:800;color:var(--primary-dark);line-height:1.1}
+.duty-stat .lbl{font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:3px}
+.duty-stat.morning{border-top-color:#e08e0b}.duty-stat.morning .num{color:#b5730a}
+.duty-stat.afternoon{border-top-color:#2563eb}.duty-stat.afternoon .num{color:#1e40af}
+.duty-stat.night{border-top-color:#334155}.duty-stat.night .num{color:#293548}
+.duty-stat.preop{border-top-color:#6d5efc}.duty-stat.preop .num{color:#4338ca}
+.cal-day.has-duty{border-color:var(--primary);background:var(--primary-light);box-shadow:inset 0 0 0 1px var(--primary-tint)}
+.cal-day.has-duty:hover{box-shadow:inset 0 0 0 1px var(--primary-tint),var(--shadow-sm)}
+.cal-day.off-duty{opacity:.55}
+.duty-chip{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9.5px;font-weight:700;margin:3px 3px 0 0;line-height:1.4}
+.cal-day .duty-none{color:var(--ink-mute);font-size:9.5px;margin-top:5px;font-weight:600}
 </style>
 </head>
 <body>
@@ -213,7 +232,8 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="showPanel('nurses',this)" id="tab-nurses">👩‍⚕️ พยาบาล</button>
+    <button class="tab active" onclick="showPanel('home',this)" id="tab-home">🏠 หน้าแรก</button>
+    <button class="tab" onclick="showPanel('nurses',this)" id="tab-nurses">👩‍⚕️ พยาบาล</button>
     <button class="tab" onclick="showPanel('calendar',this)" id="tab-calendar">📅 ปฏิทิน</button>
     <button class="tab" onclick="showPanel('schedule',this)" id="tab-schedule">⚙️ จัดเวร</button>
     <button class="tab" onclick="showPanel('holidays',this)" id="tab-holidays">🎌 วันหยุด</button>
@@ -225,7 +245,30 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 
   <div class="container">
 
-    <div id="panel-nurses" class="panel active">
+    <div id="panel-home" class="panel active">
+      <div class="card">
+        <h2>🏠 ตารางเวรของฉัน</h2>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="changeHomeMonth(-1)">◀</button>
+          <input type="month" id="homeMonthPicker" onchange="renderHome()">
+          <button class="btn btn-secondary" onclick="changeHomeMonth(1)">▶</button>
+          <label style="margin-left:8px;font-size:12px;color:var(--ink-soft);font-weight:600">👥 ดูของ:</label>
+          <select class="search-input" id="homePerson" onchange="renderHome()" style="min-width:210px"></select>
+          <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="homeMonthTitle"></span>
+        </div>
+        <div id="homeSummary"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> กะเช้า</div>
+          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
+          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
+          <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
+          <div class="legend-item"><div class="legend-box" style="background:#ccfbf1;border:1px solid #0d9488"></div> วันที่มีเวร</div>
+        </div>
+        <div class="calendar" id="homeCalendar"></div>
+      </div>
+    </div>
+
+    <div id="panel-nurses" class="panel">
       <div class="card">
         <h2>👩‍⚕️ จัดการข้อมูลพยาบาล</h2>
         <div class="toolbar">
@@ -638,6 +681,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 let nurses=[],schedule={},swaps=[],customHolidays=[],users=[];
 let currentUser=null;
 let currentMonth=new Date().toISOString().slice(0,7);
+let homeMonth=new Date().toISOString().slice(0,7);
 let tempUnavailDates=[],tempUnavailShifts=[],tempUnavailWeeks=[],tempUnavailMonths=[];
 let tempUnavailShiftsInWeeks=[],tempUnavailShiftsInMonths=[],tempUnavailHolidays=[];
 
@@ -906,6 +950,7 @@ function applyRolePermissions(){
   // approver: เห็น calendar, schedule, holidays, swap, stats (ไม่เห็น nurses, settings, users)
   // requester: เห็น calendar, swap, stats (ไม่เห็น nurses, schedule, holidays, settings, users)
   const tabVisibility={
+    home:true,
     nurses:role==='admin',
     calendar:true,
     schedule:role==='admin'||role==='approver',
@@ -925,9 +970,11 @@ function applyRolePermissions(){
 function initApp(){
   document.getElementById('currentDate').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('monthPicker').value=currentMonth;
+  document.getElementById('homeMonthPicker').value=homeMonth;
   document.getElementById('scheduleMonth').value=currentMonth;
   document.getElementById('statsMonth').value=currentMonth;
   document.getElementById('filterHolidayYear').value=currentMonth.slice(0,4);
+  renderHome();
   renderNurses();
   renderCalendar();
   renderHolidays();
@@ -943,6 +990,7 @@ function showPanel(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
+  if(name==='home')renderHome();
   if(name==='calendar')renderCalendar();
   if(name==='holidays')renderHolidays();
   if(name==='stats')renderStats();
@@ -1354,6 +1402,160 @@ function changeMonth(delta){
   currentMonth=d.toISOString().slice(0,7);
   document.getElementById('monthPicker').value=currentMonth;
   renderCalendar();
+}
+// ============ HOME (ตารางเวรของฉัน) ============
+const HOME_SHIFT_META={
+  morning:{l:'เช้า',c:'badge-morning'},
+  afternoon:{l:'บ่าย',c:'badge-afternoon'},
+  night:{l:'ดึก',c:'badge-night'},
+  preop:{l:'Pre-op',c:'badge-preop'},
+  preop_morning:{l:'P-op เช้า',c:'badge-preop'},
+  preop_afternoon:{l:'P-op บ่าย',c:'badge-preop'}
+};
+function matchMyNurse(){
+  if(!currentUser)return null;
+  const fn=(currentUser.fullname||'').trim();
+  if(!fn)return null;
+  return nurses.find(n=>(n.name||'').trim()===fn)||null;
+}
+function populateHomePerson(){
+  const sel=document.getElementById('homePerson');
+  if(!sel)return;
+  const prev=sel.value;
+  const mine=matchMyNurse();
+  let html='<option value="__mine__">👤 เวรของฉัน'+(mine?' — '+mine.name:'')+'</option>';
+  html+='<option value="__all__">🌐 ทั้งหมด (รวมทุกคน)</option>';
+  const sorted=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  if(sorted.length){
+    html+='<optgroup label="เลือกดูของพยาบาลคนอื่น">';
+    sorted.forEach(n=>{html+='<option value="'+n.id+'">'+n.code+' — '+n.name+' (รุ่น '+n.generation+')</option>'});
+    html+='</optgroup>';
+  }
+  sel.innerHTML=html;
+  sel.value=prev||'__mine__';
+  if(!sel.value)sel.value='__mine__';
+}
+function changeHomeMonth(delta){
+  let[y,m]=homeMonth.split('-').map(Number);
+  m+=delta;
+  while(m<1){m+=12;y--}
+  while(m>12){m-=12;y++}
+  homeMonth=y+'-'+String(m).padStart(2,'0');
+  document.getElementById('homeMonthPicker').value=homeMonth;
+  renderHome();
+}
+function renderHome(){
+  const mp=document.getElementById('homeMonthPicker');
+  if(!mp)return;
+  if(!mp.value)mp.value=homeMonth;
+  homeMonth=mp.value;
+  const[y,m]=homeMonth.split('-').map(Number);
+  document.getElementById('homeMonthTitle').textContent=MONTH_TH[m-1]+' '+(y+543);
+  populateHomePerson();
+  const val=document.getElementById('homePerson').value;
+  if(val==='__all__'){
+    document.getElementById('homeSummary').innerHTML='<div class="alert alert-info">🌐 กำลังแสดงตารางเวร<strong>รวมของทุกคน</strong> — คลิกที่วันเพื่อดูรายละเอียดแต่ละกะ</div>';
+    renderHomeCalendarAll();
+    return;
+  }
+  let nurse=val==='__mine__'?matchMyNurse():nurses.find(n=>n.id===val)||null;
+  if(!nurse){
+    document.getElementById('homeSummary').innerHTML='<div class="alert alert-warn">⚠️ ไม่พบข้อมูลพยาบาลที่ตรงกับชื่อบัญชีของคุณ'+(currentUser?' ('+currentUser.fullname+')':'')+'<br>กรุณาเลือกชื่อของคุณจากช่อง <strong>"ดูของ"</strong> ด้านบน หรือเลือก <strong>"ทั้งหมด"</strong> เพื่อดูตารางรวม</div>';
+    document.getElementById('homeCalendar').innerHTML='';
+    return;
+  }
+  renderHomeCalendarPerson(nurse);
+}
+function renderHomeCalendarPerson(nurse){
+  const[y,m]=homeMonth.split('-').map(Number);
+  const startDow=new Date(y,m-1,1).getDay();
+  const daysInMonth=new Date(y,m,0).getDate();
+  const ms=schedule[homeMonth]||{};
+  // สรุปจำนวนเวร
+  const counts={morning:0,afternoon:0,night:0,preop:0};
+  for(const d in ms){
+    const ds=ms[d];
+    if((ds.morning||[]).includes(nurse.id))counts.morning++;
+    if((ds.afternoon||[]).includes(nurse.id))counts.afternoon++;
+    if((ds.night||[]).includes(nurse.id))counts.night++;
+    if((ds.preop||[]).includes(nurse.id)||(ds.preop_morning||[]).includes(nurse.id)||(ds.preop_afternoon||[]).includes(nurse.id))counts.preop++;
+  }
+  const total=counts.morning+counts.afternoon+counts.night+counts.preop;
+  let summary='<div class="home-hero">'
+    +'<div class="avatar">'+(nurse.name?nurse.name.trim().replace(/^(นาย|นส\.|นาง|น\.ส\.)/,'').trim().charAt(0):'👤')+'</div>'
+    +'<div class="who"><div class="nm">'+nurse.name+' <span class="badge badge-gen'+nurse.generation+'">รุ่น '+nurse.generation+'</span></div>'
+    +'<div class="sub">รหัส '+nurse.code+(nurse.phone?' · 📞 '+nurse.phone:'')+'</div></div></div>';
+  summary+='<div class="duty-summary">'
+    +'<div class="duty-stat"><div class="num">'+total+'</div><div class="lbl">รวมทั้งเดือน</div></div>'
+    +'<div class="duty-stat morning"><div class="num">'+counts.morning+'</div><div class="lbl">🌅 เช้า</div></div>'
+    +'<div class="duty-stat afternoon"><div class="num">'+counts.afternoon+'</div><div class="lbl">☀️ บ่าย</div></div>'
+    +'<div class="duty-stat night"><div class="num">'+counts.night+'</div><div class="lbl">🌙 ดึก</div></div>'
+    +'<div class="duty-stat preop"><div class="num">'+counts.preop+'</div><div class="lbl">🏥 Pre-op</div></div></div>';
+  if(total===0)summary+='<div class="alert alert-info">💡 ยังไม่มีเวรของ '+nurse.name.split(' ')[0]+' ในเดือนนี้ — ลองไปที่แท็บ "จัดเวร" เพื่อจัดตารางก่อน</div>';
+  document.getElementById('homeSummary').innerHTML=summary;
+  // ปฏิทิน
+  let html='';
+  WEEKDAY_TH.forEach((w,i)=>{html+='<div class="cal-header '+(i===0?'sun':'')+'">'+w+'</div>'});
+  for(let i=0;i<startDow;i++)html+='<div class="cal-day empty"></div>';
+  const today=formatDate(new Date());
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=homeMonth+'-'+String(d).padStart(2,'0');
+    const ds=ms[d];
+    const we=isWeekend(dateStr),hol=isHoliday(dateStr),isToday=dateStr===today;
+    const myShifts=ds?Object.keys(HOME_SHIFT_META).filter(k=>(ds[k]||[]).includes(nurse.id)):[];
+    let cls='cal-day';
+    if(we)cls+=' weekend';
+    if(hol)cls+=' holiday';
+    if(myShifts.length)cls+=' has-duty';
+    else if(ds)cls+=' off-duty';
+    if(isToday)cls+=' today';
+    let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
+    if(myShifts.length){
+      content+='<div>'+myShifts.map(k=>'<span class="duty-chip badge '+HOME_SHIFT_META[k].c+'">'+HOME_SHIFT_META[k].l+'</span>').join('')+'</div>';
+    }else if(ds){
+      content+='<div class="duty-none">หยุด</div>';
+    }else{
+      content+='<div class="duty-none">–</div>';
+    }
+    html+='<div class="'+cls+'" onclick="showHomeDayDetail(\''+dateStr+'\')">'+content+'</div>';
+  }
+  document.getElementById('homeCalendar').innerHTML=html;
+}
+function renderHomeCalendarAll(){
+  const[y,m]=homeMonth.split('-').map(Number);
+  const startDow=new Date(y,m-1,1).getDay();
+  const daysInMonth=new Date(y,m,0).getDate();
+  const ms=schedule[homeMonth]||{};
+  let html='';
+  WEEKDAY_TH.forEach((w,i)=>{html+='<div class="cal-header '+(i===0?'sun':'')+'">'+w+'</div>'});
+  for(let i=0;i<startDow;i++)html+='<div class="cal-day empty"></div>';
+  const today=formatDate(new Date());
+  const getName=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name.split(' ')[0]:'?'};
+  const fmt=(arr)=>(arr||[]).map(getName).join(', ')||'-';
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=homeMonth+'-'+String(d).padStart(2,'0');
+    const ds=ms[d];
+    const we=isWeekend(dateStr),hol=isHoliday(dateStr),isToday=dateStr===today;
+    let cls='cal-day';
+    if(we)cls+=' weekend';
+    if(hol)cls+=' holiday';
+    if(isToday)cls+=' today';
+    let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
+    if(ds){
+      content+='<div class="shift-info"><span class="shift-label">เช้า:</span> <span class="nurse-name">'+fmt(ds.morning)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">บ่าย:</span> <span class="nurse-name">'+fmt(ds.afternoon)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmt(ds.night)+'</span></div>';
+      if(ds.preop_morning&&ds.preop_morning.length)content+='<div class="shift-info"><span class="shift-label">P-op เช้า:</span> <span class="nurse-name">'+fmt(ds.preop_morning)+'</span></div>';
+      if(ds.preop_afternoon&&ds.preop_afternoon.length)content+='<div class="shift-info"><span class="shift-label">P-op บ่าย:</span> <span class="nurse-name">'+fmt(ds.preop_afternoon)+'</span></div>';
+      if(ds.preop&&ds.preop.length&&!ds.preop_morning)content+='<div class="shift-info"><span class="shift-label">Pre-op:</span> <span class="nurse-name">'+fmt(ds.preop)+'</span></div>';
+    }else{content+='<div style="color:#94a3b8;font-size:9px;margin-top:3px">ยังไม่ได้จัดเวร</div>'}
+    html+='<div class="'+cls+'" onclick="showHomeDayDetail(\''+dateStr+'\')">'+content+'</div>';
+  }
+  document.getElementById('homeCalendar').innerHTML=html;
+}
+function showHomeDayDetail(dateStr){
+  currentMonth=homeMonth;
+  showDayDetail(dateStr);
 }
 function renderCalendar(){
   const mp=document.getElementById('monthPicker');
