@@ -1,0 +1,18 @@
+name = "nawee-duty-schedule"
+account_id = "c80895cd78be05596050dad85154af01"
+main = "src/worker.js"
+compatibility_date = "2026-07-05"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/auth/*", "/api/*"]
+
+# ค่าตั้งค่าทั้งหมดเก็บเป็น "Secret" บน Cloudflare (Settings → Variables and Secrets)
+# ไม่เก็บในไฟล์นี้ — commit ขึ้น public repo ได้อย่างปลอดภัย และรองรับ push-to-deploy (Workers Builds)
+# ตั้งผ่าน CLI: npx wrangler secret put <ชื่อ>
+#   APPS_SCRIPT_URL      - Web App URL (/exec) ของ Apps Script
+#   APPS_SCRIPT_TOKEN    - ต้องตรงกับ SECRET_TOKEN ใน apps_script_backend.gs
+#   SESSION_SECRET       - สตริงสุ่มยาวๆ สำหรับเซ็น session JWT
+#   LINE_CHANNEL_ID      - จาก LINE Developers Console (ตอนทำ LINE Login)
+#   LINE_CHANNEL_SECRET  - จาก LINE Developers Console (ตอนทำ LINE Login)
