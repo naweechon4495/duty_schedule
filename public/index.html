@@ -192,6 +192,9 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .cal-day.office-day{background:#f7fbfa;border-color:var(--line-strong)}
 .duty-chip{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9.5px;font-weight:700;margin:3px 3px 0 0;line-height:1.4}
 .duty-chip.office{background:#eef4f2;color:var(--ink-soft);border:1px dashed var(--line-strong)}
+.duty-chip.leave{background:#fde8cf;color:#9a5b00;font-weight:700}
+.duty-chip.custom{background:#e8e2ff;color:#4c2fb0;font-weight:700}
+.cal-day.on-leave{background:#fff6ea;border-color:#f0b76b}
 .cal-day .duty-none{color:var(--ink-mute);font-size:9.5px;margin-top:5px;font-weight:600}
 </style>
 </head>
@@ -240,6 +243,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
     <button class="tab" onclick="showPanel('schedule',this)" id="tab-schedule">⚙️ จัดเวร</button>
     <button class="tab" onclick="showPanel('holidays',this)" id="tab-holidays">🎌 วันหยุด</button>
     <button class="tab" onclick="showPanel('swap',this)" id="tab-swap">🔄 แลกเวร</button>
+    <button class="tab" onclick="showPanel('leave',this)" id="tab-leave">🌴 วันลา</button>
     <button class="tab" onclick="showPanel('stats',this)" id="tab-stats">📊 สถิติ</button>
     <button class="tab" onclick="showPanel('settings',this)" id="tab-settings">⚡ ตั้งค่า</button>
     <button class="tab" onclick="showPanel('users',this)" id="tab-users">👥 ผู้ใช้</button>
@@ -341,6 +345,13 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         </div>
         <div id="scheduleResult"></div>
       </div>
+      <div class="card">
+        <h2>➕ เพิ่มเวรกำหนดเอง</h2>
+        <div class="alert alert-info">💡 สร้างเวรพิเศษ (เช่น ประชุม/อบรม) กำหนดชื่อ กะเวลา ช่วงวันที่ และสุ่มคนที่ยังไม่มีเวรในวันนั้น</div>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openCustomShiftModal()">➕ เพิ่มเวร</button>
+        </div>
+      </div>
     </div>
 
     <div id="panel-holidays" class="panel">
@@ -382,6 +393,15 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
       </div>
     </div>
 
+    <div id="panel-leave" class="panel">
+      <div class="card">
+        <h2>🌴 ระบบวันลา</h2>
+        <div class="alert alert-info">💡 ประเภทการลา: 📄 ลากิจ · 🤒 ลาป่วย · 🌴 ลาพักร้อน — เมื่ออนุมัติแล้ว ระบบจะไม่จัดเวรให้ในวันที่ลา และถ้า<strong>ลาป่วย</strong>ทับวันที่มีเวรอยู่ ระบบจะแนะนำคนขึ้นแทน</div>
+        <div id="leaveActions"></div>
+        <div id="leaveList" style="margin-top:14px"></div>
+      </div>
+    </div>
+
     <div id="panel-stats" class="panel">
       <div class="card">
         <h2>📊 สถิติการเข้าเวร</h2>
@@ -411,6 +431,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
               • พยาบาล: <strong id="infoNurses">0</strong> คน<br>
               • เดือนที่มีตาราง: <strong id="infoMonths">0</strong> เดือน<br>
               • คำขอแลกเวร: <strong id="infoSwaps">0</strong> รายการ<br>
+              • คำขอลา: <strong id="infoLeaves">0</strong> รายการ<br>
               • วันหยุดพิเศษ: <strong id="infoHolidays">0</strong> วัน<br>
               • ผู้ใช้ระบบ: <strong id="infoUsers">0</strong> คน
             </div>
@@ -455,7 +476,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
           • <span class="badge badge-role-requester">ผู้ยื่นคำขอ</span> - ยื่นคำขอแลกเวร + ดูปฏิทิน/สถิติ
         </div>
         <table>
-          <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>จัดการ</th></tr></thead>
+          <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>พยาบาลที่ผูก</th><th>จัดการ</th></tr></thead>
           <tbody id="userTable"></tbody>
         </table>
       </div>
@@ -633,23 +654,99 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 <!-- Modal แลกเวร -->
 <div class="modal" id="swapModal">
   <div class="modal-content">
-    <h3>สร้างคำขอแลกเวร</h3>
-    <div class="form-group"><label>ผู้ขอ (พยาบาล A)</label><select id="swapFrom"></select></div>
-    <div class="form-group"><label>วันที่ขอแลก</label><input type="date" id="swapDate"></div>
+    <h3 id="swapModalTitle">สร้างคำขอแลกเวร</h3>
+    <div class="form-group"><label>ประเภท</label>
+      <div class="checkbox-group">
+        <label><input type="radio" name="swapType" value="swap" checked onchange="onSwapTypeChange()"> 🔄 แลกเวร (สลับกัน)</label>
+        <label><input type="radio" name="swapType" value="giveaway" onchange="onSwapTypeChange()"> ➡️ ยกเวร (ยกให้เลย)</label>
+      </div>
+    </div>
+    <div class="form-group"><label id="swapFromLabel">ผู้ขอ (พยาบาล A)</label><select id="swapFrom"></select></div>
+    <div class="form-group"><label>วันที่</label><input type="date" id="swapDate"></div>
     <div class="form-group"><label>กะ</label>
       <select id="swapShift">
         <option value="morning">กะเช้า</option><option value="afternoon">กะบ่าย</option>
         <option value="night">กะดึก</option>
         <option value="preop_morning">Pre-op เช้า (วันหยุด)</option>
         <option value="preop_afternoon">Pre-op บ่าย (วันหยุด)</option>
+        <option value="preop">Pre-op (วันธรรมดา)</option>
       </select>
     </div>
-    <div class="form-group"><label>ผู้รับแทน (พยาบาล B)</label><select id="swapTo"></select></div>
-    <div class="form-group"><label>วันที่รับแทน (เว้นว่าง = วันเดียวกัน)</label><input type="date" id="swapDate2"></div>
+    <div class="form-group"><label id="swapToLabel">ผู้รับแทน (พยาบาล B)</label><select id="swapTo"></select></div>
+    <div class="form-group" id="swapDate2Row"><label>วันที่รับแทน (เว้นว่าง = วันเดียวกัน)</label><input type="date" id="swapDate2"></div>
     <div class="form-group"><label>เหตุผล</label><textarea id="swapReason" style="min-height:50px"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
       <button class="btn btn-secondary" onclick="closeModal('swapModal')">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveSwap()">💾 ส่งคำขอ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal เพิ่มเวรกำหนดเอง -->
+<div class="modal" id="customShiftModal">
+  <div class="modal-content">
+    <h3>➕ เพิ่มเวรกำหนดเอง</h3>
+    <div class="form-group"><label>ชื่อเวร *</label><input type="text" id="csName" placeholder="เช่น ประชุมวิชาการ, อบรม CPR"></div>
+    <div class="form-group"><label>กะเวลา</label>
+      <div class="checkbox-group">
+        <label><input type="radio" name="csSlot" value="morning" checked> 🌅 เช้า</label>
+        <label><input type="radio" name="csSlot" value="afternoon"> ☀️ บ่าย</label>
+        <label><input type="radio" name="csSlot" value="night"> 🌙 ดึก</label>
+      </div>
+    </div>
+    <div class="form-group"><label>ขอบเขตวัน</label>
+      <div class="checkbox-group">
+        <label><input type="radio" name="csScope" value="month" checked onchange="onCsScopeChange()"> ทั้งเดือน</label>
+        <label><input type="radio" name="csScope" value="range" onchange="onCsScopeChange()"> ช่วงวันที่</label>
+        <label><input type="radio" name="csScope" value="day" onchange="onCsScopeChange()"> วันเดียว</label>
+      </div>
+    </div>
+    <div class="form-group" id="csRangeRow" style="display:none">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><label>ตั้งแต่</label><input type="date" id="csFrom"></div>
+        <div style="flex:1"><label>ถึง</label><input type="date" id="csTo"></div>
+      </div>
+    </div>
+    <div class="form-group" id="csDayRow" style="display:none"><label>วันที่</label><input type="date" id="csDay"></div>
+    <div class="form-group"><label>จำนวนคนต่อวัน</label><input type="number" id="csCount" value="1" min="1" style="max-width:120px"></div>
+    <div class="form-group"><label>วิธีเลือกคน</label>
+      <div class="checkbox-group">
+        <label><input type="radio" name="csPick" value="random" checked onchange="onCsPickChange()"> 🎲 สุ่มจากคนที่ยังไม่มีเวร</label>
+        <label><input type="radio" name="csPick" value="manual" onchange="onCsPickChange()"> เลือกเอง</label>
+      </div>
+    </div>
+    <div class="form-group" id="csManualRow" style="display:none"><label>เลือกพยาบาล</label>
+      <select id="csManual" multiple style="min-height:120px"></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('customShiftModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveCustomShift()">💾 เพิ่มเวร</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal วันลา -->
+<div class="modal" id="leaveModal">
+  <div class="modal-content">
+    <h3>🌴 ขอลา</h3>
+    <div class="form-group"><label id="leaveNurseLabel">พยาบาลที่ลา</label><select id="leaveNurse"></select></div>
+    <div class="form-group"><label>ประเภทการลา</label>
+      <select id="leaveType">
+        <option value="personal">📄 ลากิจ</option>
+        <option value="sick">🤒 ลาป่วย</option>
+        <option value="vacation">🌴 ลาพักร้อน</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><label>ตั้งแต่วันที่</label><input type="date" id="leaveFrom"></div>
+        <div style="flex:1"><label>ถึงวันที่ (เว้นว่าง = วันเดียว)</label><input type="date" id="leaveTo"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>เหตุผล</label><textarea id="leaveReason" style="min-height:50px"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px">
+      <button class="btn btn-secondary" onclick="closeModal('leaveModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveLeave()">💾 ส่งคำขอลา</button>
     </div>
   </div>
 </div>
@@ -669,6 +766,10 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         <option value="admin">ผู้ดูแลระบบ (จัดการทั้งหมด)</option>
       </select>
     </div>
+    <div class="form-group"><label>👩‍⚕️ ผูกกับพยาบาล (ตามรหัส)</label>
+      <select id="userNurseCode"></select>
+      <div style="font-size:11px;color:#64748b;margin-top:4px">ผูกบัญชีกับพยาบาลเพื่อให้ระบบรู้ว่าเวร/การลาของบัญชีนี้เป็นของใคร</div>
+    </div>
     <div class="form-group" id="userLineRow" style="display:none">
       <label>💬 บัญชี LINE ที่เชื่อมไว้</label>
       <div style="font-size:11px;color:#64748b" id="userLineStatus">-</div>
@@ -682,7 +783,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 
 <script>
 // ============ DATA ============
-let nurses=[],schedule={},swaps=[],customHolidays=[],users=[];
+let nurses=[],schedule={},swaps=[],customHolidays=[],users=[],leaves=[];
 let currentUser=null;
 let currentMonth=new Date().toISOString().slice(0,7);
 let homeMonth=new Date().toISOString().slice(0,7);
@@ -695,9 +796,10 @@ try{
   swaps=JSON.parse(localStorage.getItem('swaps')||'[]');
   customHolidays=JSON.parse(localStorage.getItem('customHolidays')||'[]');
   users=JSON.parse(localStorage.getItem('users')||'[]');
+  leaves=JSON.parse(localStorage.getItem('leaves')||'[]');
   const savedUser=localStorage.getItem('currentUser');
   if(savedUser)currentUser=JSON.parse(savedUser);
-}catch(e){nurses=[];schedule={};swaps=[];customHolidays=[];users=[]}
+}catch(e){nurses=[];schedule={};swaps=[];customHolidays=[];users=[];leaves=[]}
 
 if(users.length===0){
   users=[
@@ -801,6 +903,7 @@ function save(){
     localStorage.setItem('swaps',JSON.stringify(swaps));
     localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
     localStorage.setItem('users',JSON.stringify(users));
+    localStorage.setItem('leaves',JSON.stringify(leaves));
     if(currentUser)localStorage.setItem('currentUser',JSON.stringify(currentUser));
     cloudPush(false);
     return true;
@@ -832,16 +935,18 @@ async function cloudPull(manual){
     if(data.swaps)swaps=data.swaps;
     if(data.customHolidays)customHolidays=data.customHolidays;
     if(data.users&&data.users.length)users=data.users;
+    if(data.leaves)leaves=data.leaves;
     localStorage.setItem('nurses',JSON.stringify(nurses));
     localStorage.setItem('schedule',JSON.stringify(schedule));
     localStorage.setItem('swaps',JSON.stringify(swaps));
     localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
     localStorage.setItem('users',JSON.stringify(users));
+    localStorage.setItem('leaves',JSON.stringify(leaves));
     cloudLastSync=new Date().toISOString();
     localStorage.setItem('cloudLastSync',cloudLastSync);
     if(status)status.textContent='✅ ซิงค์ล่าสุด: '+new Date(cloudLastSync).toLocaleString('th-TH');
     if(document.getElementById('mainApp')&&document.getElementById('mainApp').style.display!=='none'){
-      renderNurses();renderCalendar();renderHolidays();renderSwaps();renderStats();renderUsers();updateInfo();
+      renderNurses();renderCalendar();renderHolidays();renderSwaps();renderLeaves();renderStats();renderUsers();updateInfo();renderHome();
     }
     if(manual)alert('✅ ดึงข้อมูลจากฐานข้อมูลออนไลน์สำเร็จ');
     return true;
@@ -857,7 +962,7 @@ async function cloudPush(manual){
   try{
     if(manual&&status)status.textContent='⏳ กำลังส่งข้อมูล...';
     const res=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({nurses,schedule,swaps,customHolidays,users})});
+      body:JSON.stringify({nurses,schedule,swaps,customHolidays,users,leaves})});
     const result=await res.json();
     if(result.error)throw new Error(result.error);
     cloudLastSync=new Date().toISOString();
@@ -960,6 +1065,7 @@ function applyRolePermissions(){
     schedule:role==='admin'||role==='approver',
     holidays:role==='admin',
     swap:true,
+    leave:true,
     stats:true,
     settings:role==='admin',
     users:role==='admin'
@@ -983,6 +1089,7 @@ function initApp(){
   renderCalendar();
   renderHolidays();
   renderSwaps();
+  renderLeaves();
   renderStats();
   renderUsers();
   updateInfo();
@@ -999,6 +1106,7 @@ function showPanel(name,btn){
   if(name==='holidays')renderHolidays();
   if(name==='stats')renderStats();
   if(name==='swap')renderSwaps();
+  if(name==='leave')renderLeaves();
   if(name==='settings'){updateInfo();fillCloudConfigFields();}
   if(name==='users')renderUsers();
 }
@@ -1416,11 +1524,41 @@ const HOME_SHIFT_META={
   preop_morning:{l:'P-op เช้า',c:'badge-preop'},
   preop_afternoon:{l:'P-op บ่าย',c:'badge-preop'}
 };
+const LEAVE_TYPES={personal:'ลากิจ',sick:'ลาป่วย',vacation:'ลาพักร้อน'};
+const LEAVE_TYPE_EMOJI={personal:'📄',sick:'🤒',vacation:'🌴'};
+const SLOT_LABELS={morning:'เช้า',afternoon:'บ่าย',night:'ดึก'};
+const STD_SHIFTS=['morning','afternoon','night','preop','preop_morning','preop_afternoon'];
+// คืน object ผู้ใช้เต็มจาก users (ครอบคลุมกรณี currentUser จาก /auth/me ที่ไม่มี nurseCode)
+function getUserRecord(){
+  if(!currentUser)return null;
+  return users.find(u=>u.username===currentUser.username)||null;
+}
+// เชื่อมบัญชี↔พยาบาล: ใช้ nurseCode ก่อน แล้วค่อย fallback เทียบชื่อ
 function matchMyNurse(){
   if(!currentUser)return null;
+  const rec=getUserRecord();
+  const code=(currentUser.nurseCode||(rec&&rec.nurseCode)||'').trim();
+  if(code){const byCode=nurses.find(n=>(n.code||'').trim()===code);if(byCode)return byCode}
   const fn=(currentUser.fullname||'').trim();
   if(!fn)return null;
   return nurses.find(n=>(n.name||'').trim()===fn)||null;
+}
+// ===== custom shift helpers (key = "slot|ชื่อเวร") =====
+function isCustomKey(k){return k.indexOf('|')>=0}
+function parseCustom(k){const i=k.indexOf('|');return{slot:k.slice(0,i),name:k.slice(i+1)}}
+function customKeysOf(ds){return ds?Object.keys(ds).filter(isCustomKey):[]}
+// พยาบาลมีเวร (มาตรฐานหรือ custom) วันนั้นหรือไม่ — ไม่นับ night_oncall (เป็น subset ของ night)
+function nurseHasAnyShift(ds,id){
+  if(!ds)return false;
+  for(const k of STD_SHIFTS)if((ds[k]||[]).includes(id))return true;
+  for(const k of customKeysOf(ds))if((ds[k]||[]).includes(id))return true;
+  return false;
+}
+// ===== leave helpers =====
+function isOnLeave(nurseId,dateStr,onlyApproved){
+  return leaves.some(l=>l.nurseId===nurseId
+    &&(onlyApproved!==false?l.status==='approved':l.status!=='rejected')
+    &&dateStr>=l.dateFrom&&dateStr<=(l.dateTo||l.dateFrom));
 }
 function populateHomePerson(){
   const sel=document.getElementById('homePerson');
@@ -1475,14 +1613,21 @@ function renderHomeCalendarPerson(nurse){
   const startDow=new Date(y,m-1,1).getDay();
   const daysInMonth=new Date(y,m,0).getDate();
   const ms=schedule[homeMonth]||{};
-  // สรุปจำนวนเวร
+  // สรุปจำนวนเวร + วันหยุด + วันลา
   const counts={morning:0,afternoon:0,night:0,preop:0};
-  for(const d in ms){
+  let restDays=0,leaveDays=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=homeMonth+'-'+String(d).padStart(2,'0');
     const ds=ms[d];
-    if((ds.morning||[]).includes(nurse.id))counts.morning++;
-    if((ds.afternoon||[]).includes(nurse.id))counts.afternoon++;
-    if((ds.night||[]).includes(nurse.id))counts.night++;
-    if((ds.preop||[]).includes(nurse.id)||(ds.preop_morning||[]).includes(nurse.id)||(ds.preop_afternoon||[]).includes(nurse.id))counts.preop++;
+    if(ds){
+      if((ds.morning||[]).includes(nurse.id))counts.morning++;
+      if((ds.afternoon||[]).includes(nurse.id))counts.afternoon++;
+      if((ds.night||[]).includes(nurse.id))counts.night++;
+      if((ds.preop||[]).includes(nurse.id)||(ds.preop_morning||[]).includes(nurse.id)||(ds.preop_afternoon||[]).includes(nurse.id))counts.preop++;
+    }
+    if(isOnLeave(nurse.id,dateStr))leaveDays++;
+    // วันหยุด = วันหยุด(เสาร์-อาทิตย์/นักขัตฤกษ์) ที่ไม่มีเวร
+    if(isOffDay(dateStr)&&!nurseHasAnyShift(ds,nurse.id))restDays++;
   }
   const total=counts.morning+counts.afternoon+counts.night+counts.preop;
   let summary='<div class="home-hero">'
@@ -1494,7 +1639,10 @@ function renderHomeCalendarPerson(nurse){
     +'<div class="duty-stat morning"><div class="num">'+counts.morning+'</div><div class="lbl">🌅 เช้า</div></div>'
     +'<div class="duty-stat afternoon"><div class="num">'+counts.afternoon+'</div><div class="lbl">☀️ บ่าย</div></div>'
     +'<div class="duty-stat night"><div class="num">'+counts.night+'</div><div class="lbl">🌙 ดึก</div></div>'
-    +'<div class="duty-stat preop"><div class="num">'+counts.preop+'</div><div class="lbl">🏥 Pre-op</div></div></div>';
+    +'<div class="duty-stat preop"><div class="num">'+counts.preop+'</div><div class="lbl">🏥 Pre-op</div></div>'
+    +'<div class="duty-stat"><div class="num">'+restDays+'</div><div class="lbl">🛌 วันหยุด</div></div>'
+    +(leaveDays?'<div class="duty-stat"><div class="num">'+leaveDays+'</div><div class="lbl">🌴 วันลา</div></div>':'')
+    +'</div>';
   if(total===0)summary+='<div class="alert alert-info">💡 ยังไม่มีเวรของ '+nurse.name.split(' ')[0]+' ในเดือนนี้ — ลองไปที่แท็บ "จัดเวร" เพื่อจัดตารางก่อน</div>';
   document.getElementById('homeSummary').innerHTML=summary;
   // ปฏิทิน
@@ -1508,19 +1656,27 @@ function renderHomeCalendarPerson(nurse){
     const we=isWeekend(dateStr),hol=isHoliday(dateStr),isToday=dateStr===today;
     const isWorkday=!we&&!hol; // จันทร์-ศุกร์ ที่ไม่ใช่วันหยุดนักขัตฤกษ์
     const myShifts=ds?Object.keys(HOME_SHIFT_META).filter(k=>(ds[k]||[]).includes(nurse.id)):[];
+    const myCustom=ds?customKeysOf(ds).filter(k=>(ds[k]||[]).includes(nurse.id)):[];
     const isNightOncall=ds&&(ds.night_oncall||[]).includes(nurse.id);
+    const lv=leaves.find(l=>l.nurseId===nurse.id&&l.status==='approved'&&dateStr>=l.dateFrom&&dateStr<=(l.dateTo||l.dateFrom));
+    const hasDuty=myShifts.length||myCustom.length;
     let cls='cal-day';
     if(we)cls+=' weekend';
     if(hol)cls+=' holiday';
-    if(myShifts.length)cls+=' has-duty';
+    if(lv)cls+=' on-leave';
+    else if(hasDuty)cls+=' has-duty';
     else if(isWorkday)cls+=' office-day';
     if(isToday)cls+=' today';
     let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
-    if(myShifts.length){
-      content+='<div>'+myShifts.map(k=>{
-        const label=(k==='night'&&isNightOncall)?'ดึก 📞':HOME_SHIFT_META[k].l;
-        return '<span class="duty-chip badge '+HOME_SHIFT_META[k].c+'">'+label+'</span>';
-      }).join('')+'</div>';
+    let chips='';
+    if(lv)chips+='<span class="duty-chip leave">'+LEAVE_TYPE_EMOJI[lv.type]+' '+(LEAVE_TYPES[lv.type]||'ลา')+'</span>';
+    if(myShifts.length)chips+=myShifts.map(k=>{
+      const label=(k==='night'&&isNightOncall)?'ดึก 📞':HOME_SHIFT_META[k].l;
+      return '<span class="duty-chip badge '+HOME_SHIFT_META[k].c+'">'+label+'</span>';
+    }).join('');
+    if(myCustom.length)chips+=myCustom.map(k=>{const c=parseCustom(k);return '<span class="duty-chip custom">'+c.name+'</span>'}).join('');
+    if(chips){
+      content+='<div>'+chips+'</div>';
     }else if(isWorkday){
       content+='<div><span class="duty-chip office">เช้าทำการ</span></div>';
     }else{
@@ -1559,6 +1715,7 @@ function renderHomeCalendarAll(){
       if(ds.preop_morning&&ds.preop_morning.length)content+='<div class="shift-info"><span class="shift-label">P-op เช้า:</span> <span class="nurse-name">'+fmt(ds.preop_morning)+'</span></div>';
       if(ds.preop_afternoon&&ds.preop_afternoon.length)content+='<div class="shift-info"><span class="shift-label">P-op บ่าย:</span> <span class="nurse-name">'+fmt(ds.preop_afternoon)+'</span></div>';
       if(ds.preop&&ds.preop.length&&!ds.preop_morning)content+='<div class="shift-info"><span class="shift-label">Pre-op:</span> <span class="nurse-name">'+fmt(ds.preop)+'</span></div>';
+      customKeysOf(ds).forEach(k=>{if((ds[k]||[]).length)content+='<div class="shift-info"><span class="shift-label" style="color:#4c2fb0">'+parseCustom(k).name+':</span> <span class="nurse-name">'+fmt(ds[k])+'</span></div>'});
     }else{content+='<div style="color:#94a3b8;font-size:9px;margin-top:3px">ยังไม่ได้จัดเวร</div>'}
     html+='<div class="'+cls+'" onclick="showHomeDayDetail(\''+dateStr+'\')">'+content+'</div>';
   }
@@ -1611,6 +1768,7 @@ function renderCalendar(){
       if(daySched.preop&&daySched.preop.length&&!daySched.preop_morning){
         content+='<div class="shift-info"><span class="shift-label">Pre-op:</span> <span class="nurse-name">'+fmt(daySched.preop)+'</span></div>';
       }
+      customKeysOf(daySched).forEach(k=>{if((daySched[k]||[]).length)content+='<div class="shift-info"><span class="shift-label" style="color:#4c2fb0">'+parseCustom(k).name+':</span> <span class="nurse-name">'+fmt(daySched[k])+'</span></div>'});
     }else{content+='<div style="color:#94a3b8;font-size:9px;margin-top:3px">ยังไม่ได้จัดเวร</div>'}
     html+='<div class="'+cls+'" onclick="showDayDetail(\''+dateStr+'\')">'+content+'</div>';
   }
@@ -1651,6 +1809,15 @@ function showDayDetail(dateStr){
         });
         html+='</div>';
       }
+    });
+    // เวรกำหนดเอง (custom)
+    const isAdmin=currentUser&&currentUser.role==='admin';
+    customKeysOf(daySched).forEach(k=>{
+      const ids=daySched[k]||[];const c=parseCustom(k);
+      html+='<div style="margin-bottom:12px"><div><span class="badge duty-chip custom" style="font-size:11px">➕ '+c.name+' ('+(SLOT_LABELS[c.slot]||c.slot)+')</span>'+(isAdmin?' <button class="btn btn-sm btn-danger" onclick="removeCustomShift(\''+dateStr+'\',\''+k.replace(/'/g,"\\'")+'\')">ลบ</button>':'')+'</div>';
+      if(ids.length)ids.forEach(id=>{const n=nurses.find(x=>x.id===id);if(n)html+='<div style="padding:6px 10px;background:#f5f2ff;border-radius:4px;margin-top:4px"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span></div>'});
+      else html+='<div style="color:#94a3b8;font-size:11px;margin-top:4px">— ยังไม่มีคน —</div>';
+      html+='</div>';
     });
   }
   document.getElementById('dayModalContent').innerHTML=html;
@@ -1701,8 +1868,14 @@ function autoSchedule(){
         if(n.unavailableWeeks.some(w=>w.year===year&&w.week===weekNum))unavailable.add(n.id);
       }
       if(n.unavailableMonths&&n.unavailableMonths.includes(month))unavailable.add(n.id);
+      if(isOnLeave(n.id,dateStr))unavailable.add(n.id); // อยู่ระหว่างลา (อนุมัติแล้ว)
     });
-    
+    // คนที่อยู่เวรบ่ายเมื่อวาน ไม่ควรถูกจัดเวรดึกวันนี้ (soft constraint)
+    const pd=new Date(y,m-1,d-1);
+    const pKey=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+    const prevSched=(pKey===month)?monthSched[pd.getDate()]:(schedule[pKey]&&schedule[pKey][pd.getDate()]);
+    const prevAfternoon=new Set(prevSched?(prevSched.afternoon||[]):[]);
+
     const unavailableShifts={};
     nurses.forEach(n=>{
       if(n.unavailableShifts){
@@ -1773,13 +1946,15 @@ function autoSchedule(){
 
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
+    // ดันคนที่อยู่เวรบ่ายเมื่อวานไปท้ายคิวแต่ละรุ่น (ยังเลือกได้ถ้าคนไม่พอ) — คงลำดับ cmpBy เดิม (sort เสถียร)
+    ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>(prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))});
     const nightTeam=[];
     ['1','2','3'].forEach(g=>{
       if(nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
     });
     if(nightTeam.length<3){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
-      remaining.sort(cmpBy('night'));
+      remaining.sort((a,b)=>((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy('night')(a,b));
       while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
     }
     nightTeam.forEach(n=>{daySched.night.push(n.id);assign(n,'night')});
@@ -1837,6 +2012,79 @@ function clearSchedule(){
   if(save()){document.getElementById('scheduleResult').innerHTML='<div class="alert alert-warn">🗑️ ล้างเวรเดือนนี้แล้ว</div>';alert('✅ ล้างเวรสำเร็จ')}
 }
 
+// ============ CUSTOM SHIFT (เพิ่มเวรกำหนดเอง) ============
+function fmtLocal(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+function onCsScopeChange(){const v=document.querySelector('input[name="csScope"]:checked').value;document.getElementById('csRangeRow').style.display=v==='range'?'':'none';document.getElementById('csDayRow').style.display=v==='day'?'':'none'}
+function onCsPickChange(){const v=document.querySelector('input[name="csPick"]:checked').value;document.getElementById('csManualRow').style.display=v==='manual'?'':'none'}
+function openCustomShiftModal(){
+  if(nurses.length===0){alert('กรุณาเพิ่มข้อมูลพยาบาลก่อน');return}
+  document.getElementById('csName').value='';
+  document.querySelector('input[name="csSlot"][value="morning"]').checked=true;
+  document.querySelector('input[name="csScope"][value="month"]').checked=true;
+  document.querySelector('input[name="csPick"][value="random"]').checked=true;
+  document.getElementById('csCount').value='1';
+  document.getElementById('csFrom').value='';document.getElementById('csTo').value='';document.getElementById('csDay').value='';
+  const opts=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+' (รุ่น '+n.generation+')</option>').join('');
+  document.getElementById('csManual').innerHTML=opts;
+  onCsScopeChange();onCsPickChange();
+  openModal('customShiftModal');
+}
+function saveCustomShift(){
+  const name=document.getElementById('csName').value.trim();
+  if(!name){alert('กรุณาใส่ชื่อเวร');return}
+  if(name.indexOf('|')>=0){alert('ชื่อเวรห้ามมีอักขระ |');return}
+  const slot=document.querySelector('input[name="csSlot"]:checked').value;
+  const scope=document.querySelector('input[name="csScope"]:checked').value;
+  const pick=document.querySelector('input[name="csPick"]:checked').value;
+  const count=Math.max(1,parseInt(document.getElementById('csCount').value)||1);
+  const key=slot+'|'+name;
+  const month=document.getElementById('scheduleMonth').value||currentMonth;
+  // สร้างรายการวันเป้าหมาย
+  const dates=[];
+  if(scope==='month'){
+    const[yy,mm]=month.split('-').map(Number);const dim=new Date(yy,mm,0).getDate();
+    for(let d=1;d<=dim;d++)dates.push(month+'-'+String(d).padStart(2,'0'));
+  }else if(scope==='day'){
+    const dv=document.getElementById('csDay').value;if(!dv){alert('กรุณาเลือกวันที่');return}dates.push(dv);
+  }else{
+    let f=document.getElementById('csFrom').value,t=document.getElementById('csTo').value;
+    if(!f||!t){alert('กรุณาเลือกช่วงวันที่');return}
+    if(f>t){const tmp=f;f=t;t=tmp}
+    const[fy,fm,fd]=f.split('-').map(Number),[ty,tm,td]=t.split('-').map(Number);
+    let cur=new Date(fy,fm-1,fd);const end=new Date(ty,tm-1,td);
+    while(cur<=end){dates.push(fmtLocal(cur));cur.setDate(cur.getDate()+1)}
+  }
+  let manualIds=null;
+  if(pick==='manual'){
+    manualIds=Array.from(document.getElementById('csManual').selectedOptions).map(o=>o.value);
+    if(!manualIds.length){alert('กรุณาเลือกพยาบาลอย่างน้อย 1 คน');return}
+  }
+  let added=0;
+  dates.forEach(dateStr=>{
+    const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+    if(!schedule[mk])schedule[mk]={};
+    if(!schedule[mk][dn])schedule[mk][dn]={morning:[],afternoon:[],night:[],night_oncall:[],preop:[],preop_morning:[],preop_afternoon:[]};
+    const ds=schedule[mk][dn];
+    if(!ds[key])ds[key]=[];
+    let pickIds;
+    if(pick==='manual'){pickIds=manualIds}
+    else{
+      const free=nurses.filter(n=>!nurseHasAnyShift(ds,n.id)&&!isOnLeave(n.id,dateStr)&&!ds[key].includes(n.id));
+      for(let i=free.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[free[i],free[j]]=[free[j],free[i]]}
+      pickIds=free.slice(0,count).map(n=>n.id);
+    }
+    pickIds.forEach(id=>{if(!ds[key].includes(id)){ds[key].push(id);added++}});
+  });
+  if(save()){closeModal('customShiftModal');renderCalendar();renderHome();alert('✅ เพิ่มเวร "'+name+'" แล้ว ('+added+' คน-วัน)')}
+}
+function removeCustomShift(dateStr,key){
+  const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+  if(schedule[mk]&&schedule[mk][dn]&&schedule[mk][dn][key]){
+    delete schedule[mk][dn][key];
+    if(save()){renderCalendar();renderHome();if(document.getElementById('dayModal').classList.contains('show'))showDayDetail(dateStr)}
+  }
+}
+
 // ============ SWAP ============
 function renderSwapActions(){
   const div=document.getElementById('swapActions');
@@ -1848,51 +2096,83 @@ function renderSwapActions(){
   }
   div.innerHTML=html;
 }
+function onSwapTypeChange(){
+  const t=document.querySelector('input[name="swapType"]:checked').value;
+  const give=t==='giveaway';
+  document.getElementById('swapModalTitle').textContent=give?'สร้างคำขอยกเวร':'สร้างคำขอแลกเวร';
+  document.getElementById('swapToLabel').textContent=give?'ยกให้ (พยาบาล B)':'ผู้รับแทน (พยาบาล B)';
+  document.getElementById('swapDate2Row').style.display=give?'none':'';
+}
 function openSwapModal(){
   if(nurses.length<2){alert('ต้องมีพยาบาลอย่างน้อย 2 คน');return}
+  // requester ต้องผูกกับพยาบาลก่อน และล็อกผู้ขอเป็นตัวเอง (ข้อ 7)
+  const role=currentUser?currentUser.role:'requester';
+  let lockNurse=null;
+  if(role==='requester'){
+    lockNurse=matchMyNurse();
+    if(!lockNurse){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับพยาบาล กรุณาให้แอดมินผูกรหัสพยาบาลก่อน');return}
+  }
   const opts=nurses.map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+' (รุ่น '+n.generation+')</option>').join('');
-  document.getElementById('swapFrom').innerHTML=opts;
+  const sf=document.getElementById('swapFrom');
+  sf.innerHTML=opts;
   document.getElementById('swapTo').innerHTML=opts;
+  if(lockNurse){sf.value=lockNurse.id;sf.disabled=true}else{sf.disabled=false}
+  document.querySelector('input[name="swapType"][value="swap"]').checked=true;
+  onSwapTypeChange();
   document.getElementById('swapDate').value='';
   document.getElementById('swapDate2').value='';
   document.getElementById('swapReason').value='';
   openModal('swapModal');
 }
 function saveSwap(){
-  const from=document.getElementById('swapFrom').value;
+  const type=document.querySelector('input[name="swapType"]:checked').value;
+  const sf=document.getElementById('swapFrom');
+  let from=sf.value;
+  // ป้องกัน requester ปลอมผู้ขอ (ต่อให้ select ถูก enable ก็ตาม)
+  const role=currentUser?currentUser.role:'requester';
+  if(role==='requester'){const mine=matchMyNurse();if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับพยาบาล');return}from=mine.id}
   const to=document.getElementById('swapTo').value;
   const date=document.getElementById('swapDate').value;
   const shift=document.getElementById('swapShift').value;
   const date2=document.getElementById('swapDate2').value;
   const reason=document.getElementById('swapReason').value;
   if(!from||!to||!date){alert('กรุณากรอกข้อมูลให้ครบ');return}
-  if(from===to){alert('ผู้ขอและผู้รับแทนต้องเป็นคนละคน');return}
+  if(from===to){alert('ผู้ขอและผู้รับต้องเป็นคนละคน');return}
   swaps.push({
     id:'S'+Date.now(),
-    from:from,to:to,date:date,date2:date2||date,shift:shift,reason:reason,
+    type:type,
+    from:from,to:to,date:date,date2:type==='giveaway'?date:(date2||date),shift:shift,reason:reason,
     status:'pending',
     requestedBy:currentUser?currentUser.username:'unknown',
     createdAt:new Date().toISOString()
   });
-  if(save()){closeModal('swapModal');renderSwaps();updateInfo();alert('✅ ส่งคำขอแลกเวรแล้ว')}
+  if(save()){closeModal('swapModal');renderSwaps();updateInfo();alert(type==='giveaway'?'✅ ส่งคำขอยกเวรแล้ว':'✅ ส่งคำขอแลกเวรแล้ว')}
 }
 function updateSwapStatus(id,status){
   const s=swaps.find(x=>x.id===id);
   if(!s)return;
   if(status==='approved'){
     const[y1,m1,d1]=s.date.split('-').map(Number);
-    const[y2,m2,d2]=s.date2.split('-').map(Number);
     const month1=y1+'-'+String(m1).padStart(2,'0');
-    const month2=y2+'-'+String(m2).padStart(2,'0');
+    // ย้าย from -> to ในวันที่/กะที่ระบุ (ใช้ทั้งแลกเวรและยกเวร)
     if(schedule[month1]&&schedule[month1][d1]&&schedule[month1][d1][s.shift]){
       const arr=schedule[month1][d1][s.shift];
       const idx=arr.indexOf(s.from);
       if(idx>=0)arr[idx]=s.to;
+      // ถ้าเป็นกะดึกและ from เป็น on-call ให้ย้าย on-call ไป to ด้วย
+      if(s.shift==='night'&&schedule[month1][d1].night_oncall){
+        const oc=schedule[month1][d1].night_oncall;const oi=oc.indexOf(s.from);if(oi>=0)oc[oi]=s.to;
+      }
     }
-    if(s.date2!==s.date&&schedule[month2]&&schedule[month2][d2]&&schedule[month2][d2][s.shift]){
-      const arr=schedule[month2][d2][s.shift];
-      const idx=arr.indexOf(s.to);
-      if(idx>=0)arr[idx]=s.from;
+    // แลกเวร (swap) เท่านั้น: ทำ reverse ให้ to ไปอยู่แทน from ในวันรับแทน; ยกเวร (giveaway) ไม่ต้อง
+    if(s.type!=='giveaway'&&s.date2!==s.date){
+      const[y2,m2,d2]=s.date2.split('-').map(Number);
+      const month2=y2+'-'+String(m2).padStart(2,'0');
+      if(schedule[month2]&&schedule[month2][d2]&&schedule[month2][d2][s.shift]){
+        const arr=schedule[month2][d2][s.shift];
+        const idx=arr.indexOf(s.to);
+        if(idx>=0)arr[idx]=s.from;
+      }
     }
     s.approvedBy=currentUser?currentUser.username:'unknown';
   }
@@ -1916,19 +2196,170 @@ function renderSwaps(){
     const shiftLabel=SHIFT_LABELS[s.shift]||s.shift;
     const statusLabel={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ปฏิเสธ'}[s.status];
     const canApprove=role==='admin'||role==='approver';
+    const give=s.type==='giveaway';
+    const typeLabel=give?'<span class="badge" style="background:#e8e2ff;color:#4c2fb0">➡️ ยกเวร</span>':'<span class="badge" style="background:#dbeafe;color:#1e40af">🔄 แลกเวร</span>';
+    const reqUser=users.find(u=>u.username===s.requestedBy);
+    const reqName=reqUser?reqUser.fullname:(s.requestedBy||'-');
     return `
       <div class="swap-card ${s.status}">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
           <div style="flex:1;min-width:200px">
-            <div><strong>${from?from.name:'?'}</strong> ⇄ <strong>${to?to.name:'?'}</strong></div>
-            <div style="font-size:11px;color:#64748b;margin-top:3px">📅 ${s.date} | ⏰ ${shiftLabel}${s.date2!==s.date?' → รับแทนวันที่ '+s.date2:''}</div>
+            <div>${typeLabel} <strong>${from?from.name:'?'}</strong> ${give?'➡️':'⇄'} <strong>${to?to.name:'?'}</strong></div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px">📅 ${s.date} | ⏰ ${shiftLabel}${!give&&s.date2!==s.date?' → รับแทนวันที่ '+s.date2:''}</div>
             ${s.reason?'<div style="font-size:11px;margin-top:3px">💬 '+s.reason+'</div>':''}
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: ${s.requestedBy||'-'}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: ${reqName}</div>
             <div style="margin-top:5px"><span class="badge" style="background:#f1f5f9">${statusLabel}</span></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             ${s.status==='pending'&&canApprove?'<button class="btn btn-sm btn-success" onclick="updateSwapStatus(\''+s.id+'\',\'approved\')">✅ อนุมัติ</button><button class="btn btn-sm btn-danger" onclick="updateSwapStatus(\''+s.id+'\',\'rejected\')">❌ ปฏิเสธ</button>':''}
             ${role==='admin'?'<button class="btn btn-sm btn-secondary" onclick="deleteSwap(\''+s.id+'\')">️</button>':''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============ LEAVE (ระบบวันลา) ============
+function leaveDates(l){
+  const out=[];const to=l.dateTo||l.dateFrom;
+  const[fy,fm,fd]=l.dateFrom.split('-').map(Number),[ty,tm,td]=to.split('-').map(Number);
+  let cur=new Date(fy,fm-1,fd);const end=new Date(ty,tm-1,td);let guard=0;
+  while(cur<=end&&guard<400){out.push(fmtLocal(cur));cur.setDate(cur.getDate()+1);guard++}
+  return out;
+}
+function affectedShifts(l){
+  const res=[];
+  leaveDates(l).forEach(dateStr=>{
+    const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+    const ds=schedule[mk]&&schedule[mk][dn];if(!ds)return;
+    STD_SHIFTS.concat(customKeysOf(ds)).forEach(k=>{if((ds[k]||[]).includes(l.nurseId))res.push({dateStr,shift:k})});
+  });
+  return res;
+}
+function shiftLabelOf(k){return isCustomKey(k)?parseCustom(k).name:(SHIFT_LABELS[k]||k)}
+function countShiftsInWindow(nurseId,centerDateStr,radius){
+  const[cy,cm,cd]=centerDateStr.split('-').map(Number);let cnt=0;
+  for(let off=-radius;off<=radius;off++){
+    const dt=new Date(cy,cm-1,cd+off);const s=fmtLocal(dt);
+    const ds=schedule[s.slice(0,7)]&&schedule[s.slice(0,7)][dt.getDate()];
+    if(ds&&nurseHasAnyShift(ds,nurseId))cnt++;
+  }
+  return cnt;
+}
+function countShiftsInMonth(id,mk){let c=0;const ms=schedule[mk]||{};for(const d in ms)if(nurseHasAnyShift(ms[d],id))c++;return c}
+// แนะนำคนขึ้นแทน: คนที่วันนั้นว่าง+ไม่ลา เรียงตามเวรใน ±3 วันน้อยสุด (รุ่นเดียวกันก่อน)
+function suggestReplacement(dateStr,shift,sickId){
+  const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+  const ds=schedule[mk]&&schedule[mk][dn];if(!ds)return[];
+  const sick=nurses.find(n=>n.id===sickId);
+  const pool=nurses.filter(n=>n.id!==sickId&&!nurseHasAnyShift(ds,n.id)&&!isOnLeave(n.id,dateStr));
+  const sameGen=sick?pool.filter(n=>n.generation===sick.generation):[];
+  const use=sameGen.length?sameGen:pool;
+  return use.map(n=>({nurse:n,load:countShiftsInWindow(n.id,dateStr,3),mon:countShiftsInMonth(n.id,mk)}))
+    .sort((a,b)=>a.load-b.load||a.mon-b.mon||(a.nurse.code||'').localeCompare(b.nurse.code||''))
+    .slice(0,3);
+}
+function applyReplacement(dateStr,shift,sickId,replId){
+  const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+  const ds=schedule[mk]&&schedule[mk][dn];if(!ds||!ds[shift])return;
+  const arr=ds[shift];const idx=arr.indexOf(sickId);
+  if(idx>=0)arr[idx]=replId;
+  if(shift==='night'&&ds.night_oncall){const oc=ds.night_oncall;const oi=oc.indexOf(sickId);if(oi>=0)oc[oi]=replId}
+  if(save()){renderLeaves();renderCalendar();renderHome();renderStats();alert('✅ ใส่แทนเรียบร้อย')}
+}
+function renderLeaveActions(){
+  const div=document.getElementById('leaveActions');if(!div)return;
+  div.innerHTML='<button class="btn btn-primary" onclick="openLeaveModal()">➕ ขอลา</button>';
+}
+function openLeaveModal(){
+  if(nurses.length===0){alert('กรุณาเพิ่มข้อมูลพยาบาลก่อน');return}
+  const role=currentUser?currentUser.role:'requester';
+  const sel=document.getElementById('leaveNurse');
+  const opts=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+'</option>').join('');
+  sel.innerHTML=opts;
+  if(role==='requester'){
+    const mine=matchMyNurse();
+    if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับพยาบาล กรุณาให้แอดมินผูกรหัสพยาบาลก่อน');return}
+    sel.value=mine.id;sel.disabled=true;
+  }else{sel.disabled=false}
+  document.getElementById('leaveType').value='personal';
+  document.getElementById('leaveFrom').value='';
+  document.getElementById('leaveTo').value='';
+  document.getElementById('leaveReason').value='';
+  openModal('leaveModal');
+}
+function saveLeave(){
+  const role=currentUser?currentUser.role:'requester';
+  let nurseId=document.getElementById('leaveNurse').value;
+  if(role==='requester'){const mine=matchMyNurse();if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับพยาบาล');return}nurseId=mine.id}
+  const type=document.getElementById('leaveType').value;
+  const dateFrom=document.getElementById('leaveFrom').value;
+  const dateTo=document.getElementById('leaveTo').value||dateFrom;
+  const reason=document.getElementById('leaveReason').value;
+  if(!nurseId||!dateFrom){alert('กรุณาเลือกพยาบาลและวันที่');return}
+  if(dateTo<dateFrom){alert('วันที่สิ้นสุดต้องไม่ก่อนวันเริ่ม');return}
+  leaves.push({
+    id:'L'+Date.now(),nurseId:nurseId,type:type,dateFrom:dateFrom,dateTo:dateTo,reason:reason,
+    status:'pending',requestedBy:currentUser?currentUser.username:'unknown',createdAt:new Date().toISOString()
+  });
+  if(save()){closeModal('leaveModal');renderLeaves();updateInfo();alert('✅ ส่งคำขอลาแล้ว')}
+}
+function updateLeaveStatus(id,status){
+  const l=leaves.find(x=>x.id===id);if(!l)return;
+  if(status==='approved')l.approvedBy=currentUser?currentUser.username:'unknown';
+  l.status=status;
+  if(save()){renderLeaves();renderCalendar();renderHome();updateInfo()}
+}
+function deleteLeave(id){
+  if(!confirm('ลบคำขอลานี้?'))return;
+  leaves=leaves.filter(l=>l.id!==id);
+  if(save()){renderLeaves();renderCalendar();renderHome();updateInfo()}
+}
+function renderLeaves(){
+  renderLeaveActions();
+  const list=document.getElementById('leaveList');if(!list)return;
+  if(leaves.length===0){list.innerHTML='<div class="alert alert-info">ยังไม่มีคำขอลา</div>';return}
+  const role=currentUser?currentUser.role:'requester';
+  const canApprove=role==='admin'||role==='approver';
+  list.innerHTML=leaves.slice().reverse().map(l=>{
+    const n=nurses.find(x=>x.id===l.nurseId);
+    const statusLabel={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ปฏิเสธ'}[l.status];
+    const reqUser=users.find(u=>u.username===l.requestedBy);
+    const reqName=reqUser?reqUser.fullname:(l.requestedBy||'-');
+    const dateTxt=l.dateFrom+(l.dateTo&&l.dateTo!==l.dateFrom?' → '+l.dateTo:'');
+    const cardCls=l.status==='approved'?'approved':(l.status==='rejected'?'rejected':'');
+    // กล่องแนะนำคนแทน (เฉพาะลาป่วยที่อนุมัติแล้วและมีเวรทับ) — เห็นเฉพาะ admin/approver
+    let suggestBox='';
+    if(l.type==='sick'&&l.status==='approved'&&canApprove){
+      const aff=affectedShifts(l);
+      if(aff.length){
+        suggestBox='<div style="margin-top:8px;padding:9px;background:#fff3f5;border:1px solid #f6c6d2;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#be123c">🩺 แนะนำคนขึ้นแทน ('+aff.length+' เวรได้รับผลกระทบ)</div>';
+        aff.forEach(a=>{
+          const sug=suggestReplacement(a.dateStr,a.shift,l.nurseId);
+          suggestBox+='<div style="margin-top:6px;font-size:11.5px"><strong>'+a.dateStr+' · '+shiftLabelOf(a.shift)+'</strong>';
+          if(sug.length){
+            suggestBox+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">'+sug.map((r,i)=>'<button class="btn btn-sm '+(i===0?'btn-success':'btn-secondary')+'" onclick="applyReplacement(\''+a.dateStr+'\',\''+a.shift.replace(/'/g,"\\'")+'\',\''+l.nurseId+'\',\''+r.nurse.id+'\')">'+(i===0?'⭐ ':'')+r.nurse.name+' <span style="opacity:.7">('+r.load+' เวร/±3วัน)</span></button>').join('')+'</div>';
+          }else{suggestBox+='<div style="color:#94a3b8">— ไม่มีคนว่างที่แนะนำได้ —</div>'}
+          suggestBox+='</div>';
+        });
+        suggestBox+='</div>';
+      }
+    }
+    return `
+      <div class="swap-card ${cardCls}">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div><span class="badge" style="background:#fde8cf;color:#9a5b00">${LEAVE_TYPE_EMOJI[l.type]||''} ${LEAVE_TYPES[l.type]||l.type}</span> <strong>${n?n.name:'?'}</strong></div>
+            <div style="font-size:11px;color:#64748b;margin-top:3px">📅 ${dateTxt}</div>
+            ${l.reason?'<div style="font-size:11px;margin-top:3px">💬 '+l.reason+'</div>':''}
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: ${reqName}</div>
+            <div style="margin-top:5px"><span class="badge" style="background:#f1f5f9">${statusLabel}</span></div>
+            ${suggestBox}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${l.status==='pending'&&canApprove?'<button class="btn btn-sm btn-success" onclick="updateLeaveStatus(\''+l.id+'\',\'approved\')">✅ อนุมัติ</button><button class="btn btn-sm btn-danger" onclick="updateLeaveStatus(\''+l.id+'\',\'rejected\')">❌ ปฏิเสธ</button>':''}
+            ${role==='admin'?'<button class="btn btn-sm btn-secondary" onclick="deleteLeave(\''+l.id+'\')">🗑️</button>':''}
           </div>
         </div>
       </div>
@@ -1997,6 +2428,11 @@ function openUserModal(username){
   document.getElementById('userRole').value='requester';
   document.getElementById('userModalTitle').textContent='เพิ่มผู้ใช้';
   document.getElementById('userLineRow').style.display='none';
+  // เติมตัวเลือกพยาบาลสำหรับผูกบัญชี
+  const nsel=document.getElementById('userNurseCode');
+  const sorted=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  nsel.innerHTML='<option value="">— ไม่ผูก —</option>'+sorted.map(n=>'<option value="'+n.code+'">'+n.code+' - '+n.name+'</option>').join('');
+  nsel.value='';
   if(username){
     const u=users.find(x=>x.username===username);
     if(u){
@@ -2005,6 +2441,7 @@ function openUserModal(username){
       document.getElementById('userPassword').value=u.password;
       document.getElementById('userFullname').value=u.fullname;
       document.getElementById('userRole').value=u.role;
+      nsel.value=u.nurseCode||'';
       document.getElementById('userModalTitle').textContent='แก้ไขผู้ใช้';
       document.getElementById('userLineRow').style.display='';
       document.getElementById('userLineStatus').textContent=u.lineUserId?('✅ เชื่อมต่อแล้ว ('+u.lineUserId.slice(0,10)+'…)'):'ยังไม่ได้เชื่อม — ให้ผู้ใช้กด "เชื่อมบัญชี LINE" เองหลังล็อกอินด้วยรหัสผ่าน';
@@ -2018,16 +2455,17 @@ function saveUser(){
   const password=document.getElementById('userPassword').value;
   const fullname=document.getElementById('userFullname').value.trim();
   const role=document.getElementById('userRole').value;
+  const nurseCode=document.getElementById('userNurseCode').value;
   if(!username||!password||!fullname){alert('กรุณากรอกข้อมูลให้ครบ');return}
   if(editUsername){
     const u=users.find(x=>x.username===editUsername);
     if(u){
-      u.username=username;u.password=password;u.fullname=fullname;u.role=role;
+      u.username=username;u.password=password;u.fullname=fullname;u.role=role;u.nurseCode=nurseCode;
       if(currentUser&&currentUser.username===editUsername){currentUser=u;save()}
     }
   }else{
     if(users.find(x=>x.username===username)){alert('❌ ชื่อผู้ใช้นี้มีอยู่แล้ว');return}
-    users.push({username,password,fullname,role});
+    users.push({username,password,fullname,role,nurseCode});
   }
   if(save()){closeModal('userModal');renderUsers();updateInfo();alert('✅ บันทึกผู้ใช้สำเร็จ')}
 }
@@ -2040,17 +2478,21 @@ function deleteUser(username){
 function renderUsers(){
   const tbody=document.getElementById('userTable');
   if(!tbody)return;
-  tbody.innerHTML=users.map(u=>`
+  tbody.innerHTML=users.map(u=>{
+    const ln=u.nurseCode?nurses.find(n=>n.code===u.nurseCode):null;
+    const lnLabel=u.nurseCode?(ln?u.nurseCode+' - '+ln.name:'<span style="color:var(--danger)">'+u.nurseCode+' (ไม่พบ)</span>'):'<span style="color:var(--ink-mute)">—</span>';
+    return `
     <tr>
       <td><strong>${u.username}</strong></td>
       <td>${u.fullname}</td>
       <td><span class="badge badge-role-${u.role}">${ROLE_LABELS[u.role]}</span></td>
+      <td style="font-size:11.5px">${lnLabel}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="openUserModal('${u.username}')">✏️</button>
         ${u.username!=='admin'?'<button class="btn btn-sm btn-danger" onclick="deleteUser(\''+u.username+'\')">🗑️</button>':''}
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 // ============ PDF/CSV EXPORT ============
@@ -2200,6 +2642,7 @@ function updateInfo(){
   document.getElementById('infoNurses').textContent=nurses.length;
   document.getElementById('infoMonths').textContent=Object.keys(schedule).length;
   document.getElementById('infoSwaps').textContent=swaps.length;
+  const il=document.getElementById('infoLeaves');if(il)il.textContent=leaves.length;
   document.getElementById('infoHolidays').textContent=customHolidays.length;
   document.getElementById('infoUsers').textContent=users.length;
 }

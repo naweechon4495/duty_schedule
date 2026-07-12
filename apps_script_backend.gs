@@ -37,15 +37,17 @@ var SHEETS = {
   schedule: 'Schedule',
   swaps: 'Swaps',
   customHolidays: 'Holidays',
-  users: 'Users'
+  users: 'Users',
+  leaves: 'Leaves'
 };
 
 var HEADERS = {
   nurses: ['id','code','name','generation','phone','unavailableDates','unavailableWeekdays','unavailableShifts','unavailableWeeks','unavailableMonths','unavailableShiftsInWeeks','unavailableShiftsInMonths','unavailableHolidays'],
   schedule: ['month','day','shift','nurseId'],
-  swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt'],
+  swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
   customHolidays: ['date','name'],
-  users: ['username','password','fullname','role','lineUserId']
+  users: ['username','password','fullname','role','lineUserId','nurseCode'],
+  leaves: ['id','nurseId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt']
 };
 
 function doGet(e) {
@@ -58,7 +60,8 @@ function doGet(e) {
     schedule: readSchedule(getOrCreateSheet(ss, SHEETS.schedule, HEADERS.schedule)),
     swaps: readSwaps(getOrCreateSheet(ss, SHEETS.swaps, HEADERS.swaps)),
     customHolidays: readHolidays(getOrCreateSheet(ss, SHEETS.customHolidays, HEADERS.customHolidays)),
-    users: readUsers(getOrCreateSheet(ss, SHEETS.users, HEADERS.users))
+    users: readUsers(getOrCreateSheet(ss, SHEETS.users, HEADERS.users)),
+    leaves: readLeaves(getOrCreateSheet(ss, SHEETS.leaves, HEADERS.leaves))
   });
 }
 
@@ -81,6 +84,7 @@ function doPost(e) {
   if (data.swaps) writeSwaps(getOrCreateSheet(ss, SHEETS.swaps, HEADERS.swaps), data.swaps);
   if (data.customHolidays) writeHolidays(getOrCreateSheet(ss, SHEETS.customHolidays, HEADERS.customHolidays), data.customHolidays);
   if (data.users) writeUsers(getOrCreateSheet(ss, SHEETS.users, HEADERS.users), data.users);
+  if (data.leaves) writeLeaves(getOrCreateSheet(ss, SHEETS.leaves, HEADERS.leaves), data.leaves);
   return jsonOutput({ ok: true, savedAt: new Date().toISOString() });
 }
 
@@ -198,7 +202,8 @@ function readSwaps(sheet) {
     swaps.push({
       id: String(r[0]), from: String(r[1]), to: String(r[2]), date: String(r[3]), date2: String(r[4]),
       shift: String(r[5]), reason: String(r[6] || ''), status: String(r[7]),
-      requestedBy: String(r[8] || ''), approvedBy: String(r[9] || ''), createdAt: String(r[10] || '')
+      requestedBy: String(r[8] || ''), approvedBy: String(r[9] || ''), createdAt: String(r[10] || ''),
+      type: String(r[11] || 'swap')
     });
   }
   return swaps;
@@ -207,7 +212,7 @@ function readSwaps(sheet) {
 function writeSwaps(sheet, swaps) {
   var rows = [HEADERS.swaps];
   swaps.forEach(function (s) {
-    rows.push([s.id, s.from, s.to, s.date, s.date2, s.shift, s.reason || '', s.status, s.requestedBy || '', s.approvedBy || '', s.createdAt || '']);
+    rows.push([s.id, s.from, s.to, s.date, s.date2, s.shift, s.reason || '', s.status, s.requestedBy || '', s.approvedBy || '', s.createdAt || '', s.type || 'swap']);
   });
   overwriteSheet(sheet, rows);
 }
@@ -243,6 +248,7 @@ function readUsers(sheet) {
     if (!r[0]) continue;
     var user = { username: String(r[0]), password: String(r[1]), fullname: String(r[2]), role: String(r[3]) };
     if (r[4]) user.lineUserId = String(r[4]);
+    if (r[5]) user.nurseCode = String(r[5]);
     users.push(user);
   }
   return users;
@@ -251,7 +257,33 @@ function readUsers(sheet) {
 function writeUsers(sheet, users) {
   var rows = [HEADERS.users];
   users.forEach(function (u) {
-    rows.push([u.username, u.password, u.fullname, u.role, u.lineUserId || '']);
+    rows.push([u.username, u.password, u.fullname, u.role, u.lineUserId || '', u.nurseCode || '']);
+  });
+  overwriteSheet(sheet, rows);
+}
+
+// ---------- Leaves (วันลา) ----------
+
+function readLeaves(sheet) {
+  var rows = sheet.getDataRange().getValues();
+  var leaves = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0]) continue;
+    leaves.push({
+      id: String(r[0]), nurseId: String(r[1]), type: String(r[2]),
+      dateFrom: String(r[3]), dateTo: String(r[4] || r[3]), reason: String(r[5] || ''),
+      status: String(r[6] || 'pending'), requestedBy: String(r[7] || ''),
+      approvedBy: String(r[8] || ''), createdAt: String(r[9] || '')
+    });
+  }
+  return leaves;
+}
+
+function writeLeaves(sheet, leaves) {
+  var rows = [HEADERS.leaves];
+  leaves.forEach(function (l) {
+    rows.push([l.id, l.nurseId, l.type, l.dateFrom, l.dateTo || l.dateFrom, l.reason || '', l.status || 'pending', l.requestedBy || '', l.approvedBy || '', l.createdAt || '']);
   });
   overwriteSheet(sheet, rows);
 }
