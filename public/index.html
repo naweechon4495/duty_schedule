@@ -2113,15 +2113,15 @@ function exportScheduleMatrix(){
     if(nurses.length===0){alert('⚠️ ยังไม่มีข้อมูลพยาบาล');return}
     const cellCode=(ds,id,dateStr)=>{
       if(ds){
-        if((ds.morning||[]).includes(id))return 'ช';
+        if((ds.morning||[]).includes(id))return 'ชot'; // เวรเช้าจัดเฉพาะวันหยุด = เช้า(วันหยุด)
         const ai=(ds.afternoon||[]).indexOf(id);if(ai>=0)return ai<3?'บ1':'บ2';
         if((ds.night||[]).includes(id))return (ds.night_oncall||[]).includes(id)?'ด2':'ด';
         if((ds.preop_morning||[]).includes(id))return 'ชp';
         if((ds.preop_afternoon||[]).includes(id))return 'บp';
-        if((ds.preop||[]).includes(id))return 'ชp';
+        if((ds.preop||[]).includes(id))return 'บpot'; // Pre-op วันธรรมดา
       }
       const dw=new Date(dateStr).getDay();
-      if(dw!==0&&dw!==6&&!isHoliday(dateStr))return 'x'; // จ-ศ ไม่ใช่วันหยุด = เวรเช้าทำการ
+      if(dw!==0&&dw!==6&&!isHoliday(dateStr))return 'ช'; // จ-ศ ไม่ใช่วันหยุด = เวรเช้าทำการ
       return '';
     };
     const dayMeta=[];
@@ -2152,7 +2152,7 @@ function exportScheduleMatrix(){
       });
       h+='</tr>';
     });
-    h+='<tr><td colspan="'+totalCols+'" style="'+bd+'font-size:10px;padding:5px">คำอธิบาย: ช=เช้า, บ1=บ่ายทีม1, บ2=บ่ายทีม2, ด=ดึก, ด2=ดึก On call, ชp=Pre-op เช้า, บp=Pre-op บ่าย, x=เวรเช้าทำการ (จ-ศ) | สีส้ม=วันหยุดนักขัตฤกษ์, สีเทา=เสาร์-อาทิตย์</td></tr>';
+    h+='<tr><td colspan="'+totalCols+'" style="'+bd+'font-size:10px;padding:5px">คำอธิบาย: ช=เวรเช้าทำการ (จ-ศ), ชot=เช้า (วันหยุด/นักขัตฤกษ์), บ1=บ่ายทีม1, บ2=บ่ายทีม2, ด=ดึก, ด2=ดึก On call, ชp=Pre-op เช้า, บp=Pre-op บ่าย, บpot=Pre-op วันธรรมดา | สีส้ม=วันหยุดนักขัตฤกษ์, สีเทา=เสาร์-อาทิตย์</td></tr>';
     h+='</table>';
     const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ตารางเวร</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>'+h+'</body></html>';
     const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
