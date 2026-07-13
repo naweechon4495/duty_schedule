@@ -1860,8 +1860,9 @@ function autoSchedule(){
       });
     });
   });
-  // จัดคนเข้ากะ พร้อมอัปเดตตัวนับทั้งสอง
-  const assign=(n,shiftKey)=>{const tk=shiftTypeKey(shiftKey);totalShifts[n.id]++;typeShifts[n.id][tk]++};
+  // จัดคนเข้ากะ พร้อมอัปเดตตัวนับทั้งสอง + จดว่าถูกจัดเวรในวันนี้แล้ว (กันเวรซ้ำในวันหยุด)
+  let assignedToday=new Set();
+  const assign=(n,shiftKey)=>{const tk=shiftTypeKey(shiftKey);totalShifts[n.id]++;typeShifts[n.id][tk]++;assignedToday.add(n.id)};
 
   let warnings=[];
   
@@ -1870,7 +1871,8 @@ function autoSchedule(){
     const offDay=isOffDay(dateStr);
     const dow=new Date(dateStr).getDay();
     const daySched={morning:[],afternoon:[],night:[],night_oncall:[],preop:[],preop_morning:[],preop_afternoon:[]};
-    
+    assignedToday=new Set(); // รีเซ็ตต่อวัน
+
     const unavailable=new Set();
     nurses.forEach(n=>{
       if(n.unavailableDates&&n.unavailableDates.includes(dateStr))unavailable.add(n.id);
@@ -1928,6 +1930,7 @@ function autoSchedule(){
       nurses.forEach(n=>{
         if(unavailable.has(n.id))return;
         if(unavailableShifts[n.id]&&unavailableShifts[n.id].has(shiftType))return;
+        if(offDay&&assignedToday.has(n.id))return; // วันหยุด: 1 คนได้เวรเดียวต่อวัน
         byGen[n.generation].push(n);
       });
       Object.keys(byGen).forEach(g=>{byGen[g].sort(cmpBy(tk))});
