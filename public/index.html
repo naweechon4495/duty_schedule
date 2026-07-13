@@ -1860,6 +1860,16 @@ function autoSchedule(){
       });
     });
   });
+  // ลาพักร้อน: ลดโควตาเวร 1 เวร ต่อการลาพักร้อน 3 วัน (handicap = floor(วันลา/3))
+  // เวรที่ลดจะถูกเฉลี่ยให้คนอื่นเองโดยกลไก balancing (คนลาพักร้อนถูกจัดทีหลัง)
+  const vacHandicap={};nurses.forEach(n=>vacHandicap[n.id]=0);
+  const vacDays={};
+  leaves.forEach(l=>{
+    if(l.type==='vacation'&&l.status==='approved'&&vacHandicap[l.nurseId]!==undefined){
+      leaveDates(l).forEach(ds=>{if(ds.slice(0,7)===month)vacDays[l.nurseId]=(vacDays[l.nurseId]||0)+1});
+    }
+  });
+  Object.keys(vacDays).forEach(id=>{vacHandicap[id]=Math.floor(vacDays[id]/3)});
   // จัดคนเข้ากะ พร้อมอัปเดตตัวนับทั้งสอง + จดว่าถูกจัดเวรในวันนี้แล้ว (กันเวรซ้ำในวันหยุด)
   let assignedToday=new Set();
   const assign=(n,shiftKey)=>{const tk=shiftTypeKey(shiftKey);totalShifts[n.id]++;typeShifts[n.id][tk]++;assignedToday.add(n.id)};
@@ -1923,7 +1933,8 @@ function autoSchedule(){
     });
     
     // เรียงคนน้อยเวรของ "กะชนิดนี้" ขึ้นก่อน แล้วค่อยดูภาระรวม เพื่อเฉลี่ยแต่ละกะให้เท่ากันต่อคน
-    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||((totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+    // + บวก handicap ของคนลาพักร้อนที่ตัวนับรวม เพื่อให้ถูกจัดเวรน้อยลงตามสัดส่วนวันลา
+    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||(((totalShifts[a.id]||0)+(vacHandicap[a.id]||0))-((totalShifts[b.id]||0)+(vacHandicap[b.id]||0)));
     const getAvailableByGen=(shiftType)=>{
       const tk=shiftTypeKey(shiftType);
       const byGen={'1':[],'2':[],'3':[],'4':[]};
@@ -1997,7 +2008,10 @@ function autoSchedule(){
 
     // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
     const afternoonPool=getAvailableByGen('afternoon');
-    const aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
+    let aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
+    // วันธรรมดา: ห้ามคนที่อยู่กะดึกวันเดียวกันมาอยู่กะบ่ายด้วย (เวรดึก-บ่ายไม่ติดกัน)
+    // (วันหยุดถูกกันด้วย assignedToday ใน getAvailableByGen อยู่แล้ว)
+    if(!offDay){const nightSet=new Set(daySched.night);aftPool=aftPool.filter(n=>!nightSet.has(n.id))}
     aftPool.sort(cmpBy('afternoon'));
     const aftTeam1=[],aftTeam2=[];
     const aftGens1=new Set(),aftGens2=new Set();
