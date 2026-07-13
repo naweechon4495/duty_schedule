@@ -149,6 +149,8 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .tag-shift-month .remove{cursor:pointer;font-weight:700;opacity:.7}
 .tag-holiday{background:var(--primary-tint);color:var(--primary-darker);padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
 .tag-holiday .remove{cursor:pointer;font-weight:700;opacity:.7}
+.tag-fix{background:#d1fae5;color:#065f46;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.tag-fix .remove{cursor:pointer;font-weight:700;opacity:.7}
 .legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:10.5px}
 .legend-item{display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-weight:500}
 .legend-box{width:11px;height:11px;border-radius:3px}
@@ -601,6 +603,27 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
       </div>
     </div>
 
+    <div class="modal-section">
+      <div class="modal-section-title">📌 Fix เวร (ล็อกเวร)</div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>ระบุวันที่ + กะที่ต้องได้แน่นอน</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:120px"><label style="font-size:11px">วันที่</label><input type="date" id="fixShiftDate"></div>
+          <div style="flex:1;min-width:120px"><label style="font-size:11px">กะ</label>
+            <select id="fixShiftType">
+              <option value="morning">เช้า</option><option value="afternoon">บ่าย</option>
+              <option value="night">ดึก</option>
+              <option value="preop">Pre-op (วันธรรมดา)</option>
+              <option value="preop_morning">Pre-op เช้า (วันหยุด)</option>
+              <option value="preop_afternoon">Pre-op บ่าย (วันหยุด)</option>
+            </select>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="addFixShift()" style="margin-bottom:0">➕</button>
+        </div>
+        <div class="tag-list" id="fixShiftList"></div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn-secondary" onclick="closeModal('nurseModal')">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveNurse()">💾 บันทึก</button>
@@ -803,6 +826,7 @@ let currentMonth=new Date().toISOString().slice(0,7);
 let homeMonth=new Date().toISOString().slice(0,7);
 let tempUnavailDates=[],tempUnavailShifts=[],tempUnavailWeeks=[],tempUnavailMonths=[];
 let tempUnavailShiftsInWeeks=[],tempUnavailShiftsInMonths=[],tempUnavailHolidays=[];
+let tempFixedShifts=[];
 
 try{
   nurses=JSON.parse(localStorage.getItem('nurses')||'[]');
@@ -1137,8 +1161,8 @@ function openNurseModal(id){
     document.getElementById('nursePhone').value='';
     document.querySelectorAll('.unavailWeekday').forEach(c=>c.checked=false);
     tempUnavailDates=[];tempUnavailShifts=[];tempUnavailWeeks=[];tempUnavailMonths=[];
-    tempUnavailShiftsInWeeks=[];tempUnavailShiftsInMonths=[];tempUnavailHolidays=[];
-    
+    tempUnavailShiftsInWeeks=[];tempUnavailShiftsInMonths=[];tempUnavailHolidays=[];tempFixedShifts=[];
+
     // เติมตัวเลือกวันหยุด
     const holidaySelect=document.getElementById('holidaySelect');
     holidaySelect.innerHTML='<option value="">-- เลือกวันหยุด --</option>';
@@ -1165,6 +1189,7 @@ function openNurseModal(id){
       tempUnavailShiftsInWeeks=[...(n.unavailableShiftsInWeeks||[])];
       tempUnavailShiftsInMonths=[...(n.unavailableShiftsInMonths||[])];
       tempUnavailHolidays=[...(n.unavailableHolidays||[])];
+      tempFixedShifts=[...(n.fixedShifts||[])];
       (n.unavailableWeekdays||[]).forEach(w=>{
         const cb=document.querySelector(`.unavailWeekday[value="${w}"]`);
         if(cb)cb.checked=true;
@@ -1173,7 +1198,7 @@ function openNurseModal(id){
       document.getElementById('nurseModalTitle').textContent='เพิ่มพยาบาล';
     }
     renderUnavailDates();renderUnavailShifts();renderUnavailWeeks();renderUnavailMonths();
-    renderUnavailShiftsInWeeks();renderUnavailShiftsInMonths();renderUnavailHolidays();
+    renderUnavailShiftsInWeeks();renderUnavailShiftsInMonths();renderUnavailHolidays();renderFixShifts();
     openModal('nurseModal');
   }catch(e){alert('❌ เกิดข้อผิดพลาด: '+e.message)}
 }
@@ -1229,6 +1254,23 @@ function removeUnavailShift(idx){tempUnavailShifts.splice(idx,1);renderUnavailSh
 function renderUnavailShifts(){
   document.getElementById('unavailShiftList').innerHTML=tempUnavailShifts.map((s,idx)=>
     `<span class="tag-shift">${s.date} ${SHIFT_LABELS[s.shift]} <span class="remove" onclick="removeUnavailShift(${idx})">✕</span></span>`
+  ).join('');
+}
+function addFixShift(){
+  const date=document.getElementById('fixShiftDate').value;
+  const shift=document.getElementById('fixShiftType').value;
+  if(!date){alert('กรุณาเลือกวันที่');return}
+  if(tempFixedShifts.some(s=>s.date===date&&s.shift===shift)){alert('มีรายการนี้อยู่แล้ว');return}
+  tempFixedShifts.push({date,shift});
+  tempFixedShifts.sort((a,b)=>a.date.localeCompare(b.date));
+  renderFixShifts();
+  document.getElementById('fixShiftDate').value='';
+}
+function removeFixShift(idx){tempFixedShifts.splice(idx,1);renderFixShifts()}
+function renderFixShifts(){
+  const el=document.getElementById('fixShiftList');if(!el)return;
+  el.innerHTML=tempFixedShifts.map((s,idx)=>
+    `<span class="tag-fix">📌 ${s.date} ${SHIFT_LABELS[s.shift]} <span class="remove" onclick="removeFixShift(${idx})">✕</span></span>`
   ).join('');
 }
 
@@ -1324,7 +1366,8 @@ function saveNurse(){
         unavailableMonths:[...tempUnavailMonths],
         unavailableShiftsInWeeks:[...tempUnavailShiftsInWeeks],
         unavailableShiftsInMonths:[...tempUnavailShiftsInMonths],
-        unavailableHolidays:[...tempUnavailHolidays]
+        unavailableHolidays:[...tempUnavailHolidays],
+        fixedShifts:[...tempFixedShifts]
       });
     }else{
       nurses.push({id:'N'+Date.now(),code,name,generation:gen,phone,
@@ -1333,10 +1376,11 @@ function saveNurse(){
         unavailableMonths:[...tempUnavailMonths],
         unavailableShiftsInWeeks:[...tempUnavailShiftsInWeeks],
         unavailableShiftsInMonths:[...tempUnavailShiftsInMonths],
-        unavailableHolidays:[...tempUnavailHolidays]
+        unavailableHolidays:[...tempUnavailHolidays],
+        fixedShifts:[...tempFixedShifts]
       });
     }
-    
+
     if(save()){closeModal('nurseModal');renderNurses();updateInfo();alert('✅ บันทึกข้อมูลสำเร็จ!')}
   }catch(e){alert('❌ เกิดข้อผิดพลาด: '+e.message)}
 }
@@ -1400,6 +1444,7 @@ function renderNurses(){
       const shiftWeekList=(n.unavailableShiftsInWeeks||[]).map(w=>`<span class="tag-shift-week">สัปดาห์${w.week}/${w.year} ${SHIFT_LABELS[w.shift]}</span>`).join(' ');
       const shiftMonthList=(n.unavailableShiftsInMonths||[]).map(m=>{const[y,mon]=m.month.split('-');return `<span class="tag-shift-month">${MONTH_NAMES[mon]}/${parseInt(y)+543} ${SHIFT_LABELS[m.shift]}</span>`}).join(' ');
       const holidayList=(n.unavailableHolidays||[]).map(d=>{const name=getOfficialHolidayName(d)||getCustomHolidayName(d)||'';return `<span class="tag-holiday">${d.slice(5)} ${name}</span>`}).join(' ');
+      const fixList=(n.fixedShifts||[]).map(s=>`<span class="tag-fix">📌 ${s.date.slice(5)} ${SHIFT_LABELS[s.shift]}</span>`).join(' ');
       return `
         <tr>
           <td><input type="checkbox" class="nurse-checkbox" value="${n.id}"></td>
@@ -1407,7 +1452,7 @@ function renderNurses(){
           <td>${n.name}</td>
           <td><span class="badge badge-gen${n.generation}">รุ่น ${n.generation}</span></td>
           <td>${n.phone||'-'}</td>
-          <td>${n.unavailableDates&&n.unavailableDates.length?n.unavailableDates.map(d=>`<span class="tag">${d.slice(5)}</span>`).join(' '):''} ${holidayList} ${shiftList} ${weekList} ${monthList} ${shiftWeekList} ${shiftMonthList||'-'}</td>
+          <td>${n.unavailableDates&&n.unavailableDates.length?n.unavailableDates.map(d=>`<span class="tag">${d.slice(5)}</span>`).join(' '):''} ${holidayList} ${shiftList} ${weekList} ${monthList} ${shiftWeekList} ${shiftMonthList} ${fixList||'-'}</td>
           <td>
             <button class="btn btn-sm btn-primary" onclick="openNurseModal('${n.id}')">✏️</button>
             <button class="btn btn-sm btn-danger" onclick="deleteNurse('${n.id}')">🗑️</button>
@@ -1860,6 +1905,16 @@ function autoSchedule(){
       });
     });
   });
+  // ลาพักร้อน: ลดโควตาเวร 1 เวร ต่อการลาพักร้อน 3 วัน (handicap = floor(วันลา/3))
+  // เวรที่ลดจะถูกเฉลี่ยให้คนอื่นเองโดยกลไก balancing (คนลาพักร้อนถูกจัดทีหลัง)
+  const vacHandicap={};nurses.forEach(n=>vacHandicap[n.id]=0);
+  const vacDays={};
+  leaves.forEach(l=>{
+    if(l.type==='vacation'&&l.status==='approved'&&vacHandicap[l.nurseId]!==undefined){
+      leaveDates(l).forEach(ds=>{if(ds.slice(0,7)===month)vacDays[l.nurseId]=(vacDays[l.nurseId]||0)+1});
+    }
+  });
+  Object.keys(vacDays).forEach(id=>{vacHandicap[id]=Math.floor(vacDays[id]/3)});
   // จัดคนเข้ากะ พร้อมอัปเดตตัวนับทั้งสอง + จดว่าถูกจัดเวรในวันนี้แล้ว (กันเวรซ้ำในวันหยุด)
   let assignedToday=new Set();
   const assign=(n,shiftKey)=>{const tk=shiftTypeKey(shiftKey);totalShifts[n.id]++;typeShifts[n.id][tk]++;assignedToday.add(n.id)};
@@ -1886,6 +1941,14 @@ function autoSchedule(){
       if(n.unavailableMonths&&n.unavailableMonths.includes(month))unavailable.add(n.id);
       if(isOnLeave(n.id,dateStr))unavailable.add(n.id); // อยู่ระหว่างลา (อนุมัติแล้ว)
     });
+    // 📌 FIX เวร: คนที่ขอ fix กะในวันนี้ → ล็อกเข้ากะนั้น และกันไม่ให้ถูกดึงไปกะอื่น
+    const fixedByShift={morning:[],afternoon:[],night:[],preop:[],preop_morning:[],preop_afternoon:[]};
+    nurses.forEach(n=>{
+      (n.fixedShifts||[]).forEach(f=>{
+        if(f.date===dateStr&&fixedByShift[f.shift]&&!isOnLeave(n.id,dateStr)&&!fixedByShift[f.shift].some(x=>x.id===n.id))fixedByShift[f.shift].push(n);
+      });
+    });
+    Object.values(fixedByShift).forEach(arr=>arr.forEach(n=>unavailable.add(n.id))); // กันจากพูลอัตโนมัติทุกกะ
     // คนที่อยู่เวรบ่ายเมื่อวาน ไม่ควรถูกจัดเวรดึกวันนี้ (soft constraint)
     const pd=new Date(y,m-1,d-1);
     const pKey=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
@@ -1923,7 +1986,8 @@ function autoSchedule(){
     });
     
     // เรียงคนน้อยเวรของ "กะชนิดนี้" ขึ้นก่อน แล้วค่อยดูภาระรวม เพื่อเฉลี่ยแต่ละกะให้เท่ากันต่อคน
-    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||((totalShifts[a.id]||0)-(totalShifts[b.id]||0));
+    // + บวก handicap ของคนลาพักร้อนที่ตัวนับรวม เพื่อให้ถูกจัดเวรน้อยลงตามสัดส่วนวันลา
+    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||(((totalShifts[a.id]||0)+(vacHandicap[a.id]||0))-((totalShifts[b.id]||0)+(vacHandicap[b.id]||0)));
     const getAvailableByGen=(shiftType)=>{
       const tk=shiftTypeKey(shiftType);
       const byGen={'1':[],'2':[],'3':[],'4':[]};
@@ -1937,37 +2001,36 @@ function autoSchedule(){
       return byGen;
     };
     
-    // Pre-op: วันหยุด = เช้า 1 คน + บ่าย 1 คน, วันธรรมดา = 1 คน
+    // Pre-op: วันหยุด = เช้า 1 คน + บ่าย 1 คน, วันธรรมดา = 1 คน (คน fix มาก่อน)
     if(offDay){
-      const preopPool=getAvailableByGen('preop_morning');
-      if(preopPool['4'].length>0){
-        const preop=preopPool['4'].shift();
-        daySched.preop_morning.push(preop.id);
-        assign(preop,'preop_morning');
-      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op เช้า')}
-
-      const preopPool2=getAvailableByGen('preop_afternoon');
-      if(preopPool2['4'].length>0){
-        const preop2=preopPool2['4'].shift();
-        daySched.preop_afternoon.push(preop2.id);
-        assign(preop2,'preop_afternoon');
-      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op บ่าย')}
+      fixedByShift.preop_morning.forEach(n=>{daySched.preop_morning.push(n.id);assign(n,'preop_morning')});
+      if(daySched.preop_morning.length===0){
+        const preopPool=getAvailableByGen('preop_morning');
+        if(preopPool['4'].length>0){const preop=preopPool['4'].shift();daySched.preop_morning.push(preop.id);assign(preop,'preop_morning');}
+        else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op เช้า')}
+      }
+      fixedByShift.preop_afternoon.forEach(n=>{daySched.preop_afternoon.push(n.id);assign(n,'preop_afternoon')});
+      if(daySched.preop_afternoon.length===0){
+        const preopPool2=getAvailableByGen('preop_afternoon');
+        if(preopPool2['4'].length>0){const preop2=preopPool2['4'].shift();daySched.preop_afternoon.push(preop2.id);assign(preop2,'preop_afternoon');}
+        else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op บ่าย')}
+      }
     }else{
-      const preopPool=getAvailableByGen('preop');
-      if(preopPool['4'].length>0){
-        const preop=preopPool['4'].shift();
-        daySched.preop.push(preop.id);
-        assign(preop,'preop');
-      }else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op')}
+      fixedByShift.preop.forEach(n=>{daySched.preop.push(n.id);assign(n,'preop')});
+      if(daySched.preop.length===0){
+        const preopPool=getAvailableByGen('preop');
+        if(preopPool['4'].length>0){const preop=preopPool['4'].shift();daySched.preop.push(preop.id);assign(preop,'preop');}
+        else{warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': ไม่มีพยาบาลรุ่น 4 สำหรับ Pre-op')}
+      }
     }
 
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
     // ดันคนที่อยู่เวรบ่ายเมื่อวานไปท้ายคิวแต่ละรุ่น (ยังเลือกได้ถ้าคนไม่พอ) — คงลำดับ cmpBy เดิม (sort เสถียร)
     ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>(prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))});
-    const nightTeam=[];
+    const nightTeam=[...fixedByShift.night]; // คน fix กะดึกมาก่อน
     ['1','2','3'].forEach(g=>{
-      if(nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
+      if(nightTeam.length<3&&nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
     });
     if(nightTeam.length<3){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
@@ -1988,6 +2051,11 @@ function autoSchedule(){
       pool.sort(cmpBy('morning'));
       const team1=[],team2=[];
       const usedGens1=new Set(),usedGens2=new Set();
+      // คน fix กะเช้ามาก่อน
+      fixedByShift.morning.forEach(n=>{
+        if(team1.length<3){team1.push(n);usedGens1.add(n.generation)}
+        else if(team2.length<3){team2.push(n);usedGens2.add(n.generation)}
+      });
       pool.forEach(n=>{
         if(team1.length<3&&!usedGens1.has(n.generation)){team1.push(n);usedGens1.add(n.generation)}
         else if(team2.length<3&&!usedGens2.has(n.generation)){team2.push(n);usedGens2.add(n.generation)}
@@ -1997,16 +2065,27 @@ function autoSchedule(){
 
     // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
     const afternoonPool=getAvailableByGen('afternoon');
-    const aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
+    let aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
+    // วันธรรมดา: ห้ามคนที่อยู่กะดึกวันเดียวกันมาอยู่กะบ่ายด้วย (เวรดึก-บ่ายไม่ติดกัน)
+    // (วันหยุดถูกกันด้วย assignedToday ใน getAvailableByGen อยู่แล้ว)
+    if(!offDay){const nightSet=new Set(daySched.night);aftPool=aftPool.filter(n=>!nightSet.has(n.id))}
     aftPool.sort(cmpBy('afternoon'));
     const aftTeam1=[],aftTeam2=[];
     const aftGens1=new Set(),aftGens2=new Set();
+    // คน fix กะบ่ายมาก่อน
+    fixedByShift.afternoon.forEach(n=>{
+      if(aftTeam1.length<3){aftTeam1.push(n);aftGens1.add(n.generation)}
+      else if(aftTeam2.length<3){aftTeam2.push(n);aftGens2.add(n.generation)}
+    });
     aftPool.forEach(n=>{
       if(aftTeam1.length<3&&!aftGens1.has(n.generation)){aftTeam1.push(n);aftGens1.add(n.generation)}
       else if(aftTeam2.length<3&&!aftGens2.has(n.generation)){aftTeam2.push(n);aftGens2.add(n.generation)}
     });
     [...aftTeam1,...aftTeam2].forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon')});
-    
+
+    // 📌 FIX เวร: กันเหนียว — คน fix ที่กะนั้นไม่ได้รันในวันนี้ (เช่น fix กะเช้าในวันธรรมดา) ให้ใส่ตรงๆ
+    Object.keys(fixedByShift).forEach(sh=>{fixedByShift[sh].forEach(n=>{if(!daySched[sh].includes(n.id)){daySched[sh].push(n.id);assign(n,sh)}})});
+
     monthSched[d]=daySched;
   }
   
