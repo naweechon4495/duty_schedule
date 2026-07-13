@@ -715,6 +715,20 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         <label><input type="radio" name="csPick" value="manual" onchange="onCsPickChange()"> เลือกเอง</label>
       </div>
     </div>
+    <div id="csRandomRow">
+      <div class="form-group"><label>รุ่นที่นำไปสุ่ม</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" class="csGen" value="1" checked> รุ่น 1</label>
+          <label><input type="checkbox" class="csGen" value="2" checked> รุ่น 2</label>
+          <label><input type="checkbox" class="csGen" value="3" checked> รุ่น 3</label>
+          <label><input type="checkbox" class="csGen" value="4" checked> รุ่น 4</label>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label>คนที่คัดออก (ไม่นำไปสุ่ม)</label>
+        <select id="csExclude" multiple style="min-height:96px"></select>
+        <div style="font-size:11px;color:#64748b;margin-top:4px">กด Ctrl/Cmd ค้างเพื่อเลือกหลายคน</div>
+      </div>
+    </div>
     <div class="form-group" id="csManualRow" style="display:none"><label>เลือกพยาบาล</label>
       <select id="csManual" multiple style="min-height:120px"></select>
     </div>
@@ -2015,7 +2029,11 @@ function clearSchedule(){
 // ============ CUSTOM SHIFT (เพิ่มเวรกำหนดเอง) ============
 function fmtLocal(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
 function onCsScopeChange(){const v=document.querySelector('input[name="csScope"]:checked').value;document.getElementById('csRangeRow').style.display=v==='range'?'':'none';document.getElementById('csDayRow').style.display=v==='day'?'':'none'}
-function onCsPickChange(){const v=document.querySelector('input[name="csPick"]:checked').value;document.getElementById('csManualRow').style.display=v==='manual'?'':'none'}
+function onCsPickChange(){
+  const v=document.querySelector('input[name="csPick"]:checked').value;
+  document.getElementById('csManualRow').style.display=v==='manual'?'':'none';
+  document.getElementById('csRandomRow').style.display=v==='random'?'':'none';
+}
 function openCustomShiftModal(){
   if(nurses.length===0){alert('กรุณาเพิ่มข้อมูลพยาบาลก่อน');return}
   document.getElementById('csName').value='';
@@ -2024,8 +2042,10 @@ function openCustomShiftModal(){
   document.querySelector('input[name="csPick"][value="random"]').checked=true;
   document.getElementById('csCount').value='1';
   document.getElementById('csFrom').value='';document.getElementById('csTo').value='';document.getElementById('csDay').value='';
+  document.querySelectorAll('.csGen').forEach(c=>c.checked=true);
   const opts=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+' (รุ่น '+n.generation+')</option>').join('');
   document.getElementById('csManual').innerHTML=opts;
+  document.getElementById('csExclude').innerHTML=opts;
   onCsScopeChange();onCsPickChange();
   openModal('customShiftModal');
 }
@@ -2054,10 +2074,15 @@ function saveCustomShift(){
     let cur=new Date(fy,fm-1,fd);const end=new Date(ty,tm-1,td);
     while(cur<=end){dates.push(fmtLocal(cur));cur.setDate(cur.getDate()+1)}
   }
-  let manualIds=null;
+  let manualIds=null,genSet=null,excludeSet=null;
   if(pick==='manual'){
     manualIds=Array.from(document.getElementById('csManual').selectedOptions).map(o=>o.value);
     if(!manualIds.length){alert('กรุณาเลือกพยาบาลอย่างน้อย 1 คน');return}
+  }else{
+    // ตัวกรองสำหรับโหมดสุ่ม: รุ่นที่นำไปสุ่ม + คนที่คัดออก
+    genSet=new Set(Array.from(document.querySelectorAll('.csGen')).filter(c=>c.checked).map(c=>c.value));
+    if(genSet.size===0){alert('กรุณาเลือกรุ่นที่นำไปสุ่มอย่างน้อย 1 รุ่น');return}
+    excludeSet=new Set(Array.from(document.getElementById('csExclude').selectedOptions).map(o=>o.value));
   }
   let added=0;
   dates.forEach(dateStr=>{
@@ -2069,7 +2094,7 @@ function saveCustomShift(){
     let pickIds;
     if(pick==='manual'){pickIds=manualIds}
     else{
-      const free=nurses.filter(n=>!nurseHasAnyShift(ds,n.id)&&!isOnLeave(n.id,dateStr)&&!ds[key].includes(n.id));
+      const free=nurses.filter(n=>genSet.has(String(n.generation))&&!excludeSet.has(n.id)&&!nurseHasAnyShift(ds,n.id)&&!isOnLeave(n.id,dateStr)&&!ds[key].includes(n.id));
       for(let i=free.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[free[i],free[j]]=[free[j],free[i]]}
       pickIds=free.slice(0,count).map(n=>n.id);
     }
