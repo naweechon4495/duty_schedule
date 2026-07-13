@@ -1952,6 +1952,8 @@ function autoSchedule(){
     // คนที่อยู่เวรบ่ายเมื่อวาน ไม่ควรถูกจัดเวรดึกวันนี้ (soft constraint)
     const pd=new Date(y,m-1,d-1);
     const pKey=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+    const prevDateStr=fmtLocal(pd);
+    const prevIsOff=isOffDay(prevDateStr);
     const prevSched=(pKey===month)?monthSched[pd.getDate()]:(schedule[pKey]&&schedule[pKey][pd.getDate()]);
     const prevAfternoon=new Set(prevSched?(prevSched.afternoon||[]):[]);
 
@@ -2069,7 +2071,12 @@ function autoSchedule(){
     // วันธรรมดา: ห้ามคนที่อยู่กะดึกวันเดียวกันมาอยู่กะบ่ายด้วย (เวรดึก-บ่ายไม่ติดกัน)
     // (วันหยุดถูกกันด้วย assignedToday ใน getAvailableByGen อยู่แล้ว)
     if(!offDay){const nightSet=new Set(daySched.night);aftPool=aftPool.filter(n=>!nightSet.has(n.id))}
-    aftPool.sort(cmpBy('afternoon'));
+    // วันธรรมดา 2 วันติดกัน: คนที่บ่ายเมื่อวาน (ที่เป็นวันธรรมดา) ดันไปท้ายคิว — soft (ยังใช้ได้ถ้าคนไม่พอ)
+    if(!offDay&&!prevIsOff){
+      aftPool.sort((a,b)=>((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy('afternoon')(a,b));
+    }else{
+      aftPool.sort(cmpBy('afternoon'));
+    }
     const aftTeam1=[],aftTeam2=[];
     const aftGens1=new Set(),aftGens2=new Set();
     // คน fix กะบ่ายมาก่อน
