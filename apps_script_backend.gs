@@ -42,7 +42,7 @@ var SHEETS = {
 };
 
 var HEADERS = {
-  nurses: ['id','code','name','generation','phone','unavailableDates','unavailableWeekdays','unavailableShifts','unavailableWeeks','unavailableMonths','unavailableShiftsInWeeks','unavailableShiftsInMonths','unavailableHolidays'],
+  nurses: ['id','code','name','generation','phone','unavailableDates','unavailableWeekdays','unavailableShifts','unavailableWeeks','unavailableMonths','unavailableShiftsInWeeks','unavailableShiftsInMonths','unavailableHolidays','fixedShifts'],
   schedule: ['month','day','shift','nurseId'],
   swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
   customHolidays: ['date','name'],
@@ -136,7 +136,8 @@ function readNurses(sheet) {
       unavailableMonths: parseJsonSafe(r[9], []),
       unavailableShiftsInWeeks: parseJsonSafe(r[10], []),
       unavailableShiftsInMonths: parseJsonSafe(r[11], []),
-      unavailableHolidays: parseJsonSafe(r[12], [])
+      unavailableHolidays: parseJsonSafe(r[12], []),
+      fixedShifts: parseJsonSafe(r[13], [])
     });
   }
   return nurses;
@@ -154,7 +155,8 @@ function writeNurses(sheet, nurses) {
       JSON.stringify(n.unavailableMonths || []),
       JSON.stringify(n.unavailableShiftsInWeeks || []),
       JSON.stringify(n.unavailableShiftsInMonths || []),
-      JSON.stringify(n.unavailableHolidays || [])
+      JSON.stringify(n.unavailableHolidays || []),
+      JSON.stringify(n.fixedShifts || [])
     ]);
   });
   overwriteSheet(sheet, rows);
