@@ -69,6 +69,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;letter-spacing:.1px}
 .badge-gen1{background:var(--primary-tint);color:var(--primary-darker)}.badge-gen2{background:#dcfce7;color:#166534}
 .badge-gen3{background:#fef3c7;color:#92400e}.badge-gen4{background:#fce7f3;color:#9f1239}
+.badge-genstaff{background:#e0e7ff;color:#3730a3}
 .badge-morning{background:#fef3c7;color:#92400e}.badge-afternoon{background:#dbeafe;color:#1e40af}
 .badge-night{background:#293548;color:#fff}.badge-preop{background:#e6e2ff;color:#4338ca}
 .badge-role-admin{background:#fde3ea;color:#be123c}.badge-role-approver{background:#fef0d6;color:#b5730a}
@@ -291,6 +292,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
             <option value="">ทุกรุ่น</option>
             <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
             <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (Pre-op)</option>
+            <option value="staff">Staff (เช้าวันหยุด)</option>
           </select>
           <span style="margin-left:auto;color:#64748b;font-size:12px" id="nurseCount"></span>
         </div>
@@ -336,8 +338,8 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         <div class="alert alert-info">
           📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
           • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • แต่ละทีมประกอบด้วยพยาบาลคนละรุ่น (ไม่ซ้ำรุ่น) • พยาบาลรุ่น 4 จะถูกจัดเข้า Pre-op
+          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (6 คน) + Pre-op เช้า 1 คน + <strong>Staff เช้า 3 คน</strong> / กะบ่าย 2 ทีม (6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • แต่ละทีมประกอบด้วยพยาบาลคนละรุ่น (ไม่ซ้ำรุ่น) • พยาบาลรุ่น 4 จะถูกจัดเข้า Pre-op • <strong>รุ่น Staff</strong> จัดเวรเช้าเฉพาะวันหยุด (3 คน)
         </div>
         <div class="toolbar">
           <label>เดือน:</label>
@@ -501,6 +503,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         <select id="nurseGen">
           <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
           <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (เล็กสุด - Pre-op)</option>
+          <option value="staff">Staff (เวรเช้าวันหยุด)</option>
         </select>
       </div>
       <div class="form-group" style="margin-bottom:0"><label>เบอร์โทรศัพท์</label><input type="text" id="nursePhone" placeholder="เช่น 081-234-5678"></div>
@@ -745,6 +748,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
           <label><input type="checkbox" class="csGen" value="2" checked> รุ่น 2</label>
           <label><input type="checkbox" class="csGen" value="3" checked> รุ่น 3</label>
           <label><input type="checkbox" class="csGen" value="4" checked> รุ่น 4</label>
+          <label><input type="checkbox" class="csGen" value="staff" checked> Staff</label>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:0"><label>คนที่คัดออก (ไม่นำไปสุ่ม)</label>
@@ -1992,7 +1996,7 @@ function autoSchedule(){
     const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||(((totalShifts[a.id]||0)+(vacHandicap[a.id]||0))-((totalShifts[b.id]||0)+(vacHandicap[b.id]||0)));
     const getAvailableByGen=(shiftType)=>{
       const tk=shiftTypeKey(shiftType);
-      const byGen={'1':[],'2':[],'3':[],'4':[]};
+      const byGen={'1':[],'2':[],'3':[],'4':[],'staff':[]};
       nurses.forEach(n=>{
         if(unavailable.has(n.id))return;
         if(unavailableShifts[n.id]&&unavailableShifts[n.id].has(shiftType))return;
@@ -2063,6 +2067,8 @@ function autoSchedule(){
         else if(team2.length<3&&!usedGens2.has(n.generation)){team2.push(n);usedGens2.add(n.generation)}
       });
       [...team1,...team2].forEach(n=>{daySched.morning.push(n.id);assign(n,'morning')});
+      // รุ่น staff: เวรเช้าในวันหยุด 3 คน (แยกจากทีมปกติ, เฉลี่ยตามภาระ)
+      (morningPool['staff']||[]).slice(0,3).forEach(n=>{daySched.morning.push(n.id);assign(n,'morning')});
     }
 
     // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
