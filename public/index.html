@@ -337,9 +337,9 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
         <h2>⚙️ จัดเวรอัตโนมัติ</h2>
         <div class="alert alert-info">
           📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
-          • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (6 คน) + Pre-op เช้า 1 คน + <strong>Staff เช้า 3 คน</strong> / กะบ่าย 2 ทีม (6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • แต่ละทีมประกอบด้วยพยาบาลคนละรุ่น (ไม่ซ้ำรุ่น) • พยาบาลรุ่น 4 จะถูกจัดเข้า Pre-op • <strong>รุ่น Staff</strong> จัดเวรเช้าเฉพาะวันหยุด (3 คน)
+          • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (เช้า1 + เช้า2 = 6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • แต่ละทีม 3 คนคนละรุ่น (ไม่ซ้ำรุ่น) • เฉลี่ยเช้า1/เช้า2/บ่าย1/บ่าย2 เท่า ๆ กัน • รุ่น 4 = Pre-op • <strong>รุ่น Staff</strong> ได้เวรเช้าวันหยุด <strong>3 เวร/เดือน</strong> (สิทธิ์ก่อน แล้วเวรเช้าที่เหลือเฉลี่ยให้รุ่น 1-3)
         </div>
         <div class="toolbar">
           <label>เดือน:</label>
@@ -1852,22 +1852,25 @@ function showDayDetail(dateStr){
   let html='';
   if(!daySched){html='<div class="alert alert-warn">️ ยังไม่ได้จัดเวรในวันนี้</div>'}
   else{
+    const mAll=daySched.morning||[],aAll=daySched.afternoon||[];
     const shifts=[
-      {key:'morning',label:'🌅 กะเช้า',badge:'badge-morning'},
-      {key:'afternoon',label:'☀️ กะบ่าย',badge:'badge-afternoon'},
-      {key:'night',label:'🌙 กะดึก',badge:'badge-night'},
-      {key:'preop_morning',label:'🏥 Pre-op เช้า (วันหยุด)',badge:'badge-preop'},
-      {key:'preop_afternoon',label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop'},
-      {key:'preop',label:'🏥 Pre-op',badge:'badge-preop'}
+      {ids:mAll.slice(0,3),label:'🌅 เช้า ทีม 1',badge:'badge-morning'},
+      {ids:mAll.slice(3),label:'🌅 เช้า ทีม 2',badge:'badge-morning'},
+      {ids:aAll.slice(0,3),label:'☀️ บ่าย ทีม 1',badge:'badge-afternoon'},
+      {ids:aAll.slice(3),label:'☀️ บ่าย ทีม 2',badge:'badge-afternoon'},
+      {ids:daySched.night||[],label:'🌙 กะดึก',badge:'badge-night',night:true},
+      {ids:daySched.preop_morning||[],label:'🏥 Pre-op เช้า (วันหยุด)',badge:'badge-preop'},
+      {ids:daySched.preop_afternoon||[],label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop'},
+      {ids:daySched.preop||[],label:'🏥 Pre-op',badge:'badge-preop'}
     ];
     const oncall=daySched.night_oncall||[];
     shifts.forEach(s=>{
-      const ids=daySched[s.key]||[];
+      const ids=s.ids||[];
       if(ids.length){
         html+='<div style="margin-bottom:12px"><div><span class="badge '+s.badge+'">'+s.label+'</span></div>';
         ids.forEach(id=>{
           const n=nurses.find(x=>x.id===id);
-          const isOncall=s.key==='night'&&oncall.includes(id);
+          const isOncall=s.night&&oncall.includes(id);
           if(n)html+='<div style="padding:6px 10px;background:'+(isOncall?'#fff5e6':'#f8fafc')+';border-radius:4px;margin-top:4px'+(isOncall?';border-left:3px solid var(--warning)':'')+'"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(isOncall?'<span class="badge" style="background:var(--warning);color:#fff">📞 On call</span> ':'')+(n.phone?'📞 '+n.phone:'')+'</div>';
         });
         html+='</div>';
@@ -1895,20 +1898,18 @@ function autoSchedule(){
   const daysInMonth=new Date(y,m,0).getDate();
   const monthSched={};
   
-  // นับภาระงานสะสม: total = รวมทุกกะ, byType = แยกตามชนิดกะ (เพื่อเฉลี่ยแต่ละกะให้เท่ากัน)
+  // นับภาระงานสะสม: total = รวมทุกกะ, byType = แยกตามชนิดกะ+ทีม (เช้า1/เช้า2/บ่าย1/บ่าย2) เพื่อเฉลี่ยแต่ละทีมให้เท่ากัน
   const shiftTypeKey=(st)=>st.indexOf('preop')===0?'preop':st;
   const totalShifts={};
   const typeShifts={};
-  nurses.forEach(n=>{totalShifts[n.id]=0;typeShifts[n.id]={morning:0,afternoon:0,night:0,preop:0}});
-  Object.values(schedule).forEach(ms=>{
-    Object.values(ms).forEach(ds=>{
-      ['morning','afternoon','night','preop','preop_morning','preop_afternoon'].forEach(k=>{
-        (ds[k]||[]).forEach(id=>{
-          if(totalShifts[id]!==undefined){totalShifts[id]++;typeShifts[id][shiftTypeKey(k)]++}
-        });
-      });
-    });
-  });
+  nurses.forEach(n=>{totalShifts[n.id]=0;typeShifts[n.id]={morning1:0,morning2:0,afternoon1:0,afternoon2:0,night:0,preop:0}});
+  const seedDay=(ds)=>{
+    (ds.morning||[]).forEach((id,i)=>{if(typeShifts[id]){typeShifts[id][i<3?'morning1':'morning2']++;totalShifts[id]++}});
+    (ds.afternoon||[]).forEach((id,i)=>{if(typeShifts[id]){typeShifts[id][i<3?'afternoon1':'afternoon2']++;totalShifts[id]++}});
+    ['night','preop','preop_morning','preop_afternoon'].forEach(k=>{(ds[k]||[]).forEach(id=>{if(typeShifts[id]){typeShifts[id][shiftTypeKey(k)]++;totalShifts[id]++}})});
+  };
+  Object.values(schedule).forEach(ms=>{Object.values(ms).forEach(seedDay)});
+  const staffMornTotal=(id)=>typeShifts[id].morning1+typeShifts[id].morning2; // เวรเช้ารวมของ staff (คุมโควตา 3/เดือน)
   // ลาพักร้อน: ลดโควตาเวร 1 เวร ต่อการลาพักร้อน 3 วัน (handicap = floor(วันลา/3))
   // เวรที่ลดจะถูกเฉลี่ยให้คนอื่นเองโดยกลไก balancing (คนลาพักร้อนถูกจัดทีหลัง)
   const vacHandicap={};nurses.forEach(n=>vacHandicap[n.id]=0);
@@ -2050,54 +2051,48 @@ function autoSchedule(){
       daySched.night_oncall.push(oc.id);
     }
 
-    // กะเช้า: เฉพาะวันหยุด (2 ทีม)
+    // กะเช้า: เฉพาะวันหยุด (2 ทีม: เช้า1 + เช้า2) — รวมรุ่น staff โควตา 3 เวร/เดือน; เวรเช้าที่เหลือเฉลี่ยให้คนอื่น
     if(offDay){
-      const morningPool=getAvailableByGen('morning');
-      const pool=[...morningPool['1'],...morningPool['2'],...morningPool['3']];
-      pool.sort(cmpBy('morning'));
-      const team1=[],team2=[];
-      const usedGens1=new Set(),usedGens2=new Set();
-      // คน fix กะเช้ามาก่อน
-      fixedByShift.morning.forEach(n=>{
-        if(team1.length<3){team1.push(n);usedGens1.add(n.generation)}
-        else if(team2.length<3){team2.push(n);usedGens2.add(n.generation)}
-      });
-      pool.forEach(n=>{
-        if(team1.length<3&&!usedGens1.has(n.generation)){team1.push(n);usedGens1.add(n.generation)}
-        else if(team2.length<3&&!usedGens2.has(n.generation)){team2.push(n);usedGens2.add(n.generation)}
-      });
-      [...team1,...team2].forEach(n=>{daySched.morning.push(n.id);assign(n,'morning')});
-      // รุ่น staff: เวรเช้าในวันหยุด 3 คน (แยกจากทีมปกติ, เฉลี่ยตามภาระ)
-      (morningPool['staff']||[]).slice(0,3).forEach(n=>{daySched.morning.push(n.id);assign(n,'morning')});
+      // staff ได้สิทธิ์เวรเช้าก่อน (โควตา 3 เวร/เดือน, สูงสุด 1 คน/ทีม) แล้วเวรที่เหลือเฉลี่ยให้รุ่น 1-3
+      const staffElig=(n)=>staffMornTotal(n.id)<3;
+      const buildMorn=(tk,fixedList)=>{
+        const pool=getAvailableByGen(tk);
+        const team=[],uG=new Set();
+        (fixedList||[]).forEach(n=>{if(team.length<3){team.push(n);uG.add(n.generation)}});
+        // staff ก่อน (คนที่เวรเช้าน้อยสุดก่อน) — 1 คน/ทีม
+        (pool['staff']||[]).filter(staffElig).sort(cmpBy(tk)).forEach(n=>{
+          if(team.length<3&&!uG.has('staff')){team.push(n);uG.add('staff')}
+        });
+        // จากนั้นรุ่น 1-3 (ไม่ซ้ำรุ่น)
+        ['1','2','3'].flatMap(g=>pool[g]||[]).sort(cmpBy(tk)).forEach(n=>{
+          if(team.length<3&&!uG.has(n.generation)){team.push(n);uG.add(n.generation)}
+        });
+        return team;
+      };
+      buildMorn('morning1',fixedByShift.morning).forEach(n=>{daySched.morning.push(n.id);assign(n,'morning1')});
+      buildMorn('morning2',[]).forEach(n=>{daySched.morning.push(n.id);assign(n,'morning2')});
     }
 
-    // กะบ่าย: 2 ทีม × 3 คน (ทุกวัน)
-    const afternoonPool=getAvailableByGen('afternoon');
-    let aftPool=[...afternoonPool['1'],...afternoonPool['2'],...afternoonPool['3']];
-    // วันธรรมดา: ห้ามคนที่อยู่กะดึกวันเดียวกันมาอยู่กะบ่ายด้วย (เวรดึก-บ่ายไม่ติดกัน)
-    // (วันหยุดถูกกันด้วย assignedToday ใน getAvailableByGen อยู่แล้ว)
-    if(!offDay){const nightSet=new Set(daySched.night);aftPool=aftPool.filter(n=>!nightSet.has(n.id))}
-    // วันธรรมดา 2 วันติดกัน: คนที่บ่ายเมื่อวาน (ที่เป็นวันธรรมดา) ดันไปท้ายคิว — soft (ยังใช้ได้ถ้าคนไม่พอ)
-    if(!offDay&&!prevIsOff){
-      aftPool.sort((a,b)=>((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy('afternoon')(a,b));
-    }else{
-      aftPool.sort(cmpBy('afternoon'));
+    // กะบ่าย: 2 ทีม (บ่าย1 + บ่าย2) ทุกวัน — เฉลี่ยแยกทีม
+    {
+      const nightSet=new Set(daySched.night);
+      const consecSoft=(!offDay&&!prevIsOff); // วันธรรมดา 2 วันติด: ดันคนบ่ายเมื่อวานไปท้าย
+      const buildAft=(tk,fixedList)=>{
+        const pool=getAvailableByGen(tk);
+        let flat=['1','2','3'].flatMap(g=>pool[g]||[]).filter(n=>!daySched.afternoon.includes(n.id));
+        if(!offDay)flat=flat.filter(n=>!nightSet.has(n.id)); // วันธรรมดา: ไม่ซ้ำดึกวันเดียวกัน
+        flat.sort((a,b)=>consecSoft?(((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy(tk)(a,b)):cmpBy(tk)(a,b));
+        const team=[],uG=new Set();
+        (fixedList||[]).forEach(n=>{if(team.length<3&&!daySched.afternoon.includes(n.id)){team.push(n);uG.add(n.generation)}});
+        flat.forEach(n=>{if(team.length<3&&!uG.has(n.generation)){team.push(n);uG.add(n.generation)}});
+        return team;
+      };
+      buildAft('afternoon1',fixedByShift.afternoon).forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon1')});
+      buildAft('afternoon2',[]).forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon2')});
     }
-    const aftTeam1=[],aftTeam2=[];
-    const aftGens1=new Set(),aftGens2=new Set();
-    // คน fix กะบ่ายมาก่อน
-    fixedByShift.afternoon.forEach(n=>{
-      if(aftTeam1.length<3){aftTeam1.push(n);aftGens1.add(n.generation)}
-      else if(aftTeam2.length<3){aftTeam2.push(n);aftGens2.add(n.generation)}
-    });
-    aftPool.forEach(n=>{
-      if(aftTeam1.length<3&&!aftGens1.has(n.generation)){aftTeam1.push(n);aftGens1.add(n.generation)}
-      else if(aftTeam2.length<3&&!aftGens2.has(n.generation)){aftTeam2.push(n);aftGens2.add(n.generation)}
-    });
-    [...aftTeam1,...aftTeam2].forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon')});
 
     // 📌 FIX เวร: กันเหนียว — คน fix ที่กะนั้นไม่ได้รันในวันนี้ (เช่น fix กะเช้าในวันธรรมดา) ให้ใส่ตรงๆ
-    Object.keys(fixedByShift).forEach(sh=>{fixedByShift[sh].forEach(n=>{if(!daySched[sh].includes(n.id)){daySched[sh].push(n.id);assign(n,sh)}})});
+    Object.keys(fixedByShift).forEach(sh=>{fixedByShift[sh].forEach(n=>{if(!daySched[sh].includes(n.id)){daySched[sh].push(n.id);assign(n,sh==='morning'?'morning1':sh==='afternoon'?'afternoon1':sh)}})});
 
     monthSched[d]=daySched;
   }
@@ -2675,7 +2670,7 @@ function exportScheduleMatrix(){
     if(nurses.length===0){alert('⚠️ ยังไม่มีข้อมูลพยาบาล');return}
     const cellCode=(ds,id,dateStr)=>{
       if(ds){
-        if((ds.morning||[]).includes(id))return 'ชot'; // เวรเช้าจัดเฉพาะวันหยุด = เช้า(วันหยุด)
+        const mi=(ds.morning||[]).indexOf(id);if(mi>=0)return mi<3?'ช1':'ช2'; // เวรเช้าจัดเฉพาะวันหยุด (ทีม1/ทีม2)
         const ai=(ds.afternoon||[]).indexOf(id);if(ai>=0)return ai<3?'บ1':'บ2';
         if((ds.night||[]).includes(id))return (ds.night_oncall||[]).includes(id)?'ด2':'ด';
         if((ds.preop_morning||[]).includes(id))return 'ชp';
@@ -2714,7 +2709,7 @@ function exportScheduleMatrix(){
       });
       h+='</tr>';
     });
-    h+='<tr><td colspan="'+totalCols+'" style="'+bd+'font-size:10px;padding:5px">คำอธิบาย: ช=เวรเช้าทำการ (จ-ศ), ชot=เช้า (วันหยุด/นักขัตฤกษ์), บ1=บ่ายทีม1, บ2=บ่ายทีม2, ด=ดึก, ด2=ดึก On call, ชp=Pre-op เช้า, บp=Pre-op บ่าย, บpot=Pre-op วันธรรมดา | สีส้ม=วันหยุดนักขัตฤกษ์, สีเทา=เสาร์-อาทิตย์</td></tr>';
+    h+='<tr><td colspan="'+totalCols+'" style="'+bd+'font-size:10px;padding:5px">คำอธิบาย: ช=เวรเช้าทำการ (จ-ศ), ช1=เช้าทีม1 (วันหยุด), ช2=เช้าทีม2 (วันหยุด), บ1=บ่ายทีม1, บ2=บ่ายทีม2, ด=ดึก, ด2=ดึก On call, ชp=Pre-op เช้า, บp=Pre-op บ่าย, บpot=Pre-op วันธรรมดา | สีส้ม=วันหยุดนักขัตฤกษ์, สีเทา=เสาร์-อาทิตย์</td></tr>';
     h+='</table>';
     const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ตารางเวร</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>'+h+'</body></html>';
     const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
