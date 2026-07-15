@@ -294,6 +294,12 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
             <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (Pre-op)</option>
             <option value="staff">Staff (เช้าวันหยุด)</option>
           </select>
+          <select class="search-input" id="sortNurse" onchange="renderNurses()" title="จัดเรียง">
+            <option value="gen">↕ เรียงตามรุ่น</option>
+            <option value="code">↕ เรียงตามรหัส</option>
+            <option value="name">↕ เรียงตามชื่อ</option>
+          </select>
+          <button class="btn btn-secondary" id="sortDirBtn" onclick="toggleNurseSortDir()" title="สลับลำดับ ขึ้น/ลง">⬆️ น้อย→มาก</button>
           <span style="margin-left:auto;color:#64748b;font-size:12px" id="nurseCount"></span>
         </div>
         <div class="alert alert-info">💡 <strong>วันหยุด:</strong> Pre-op เช้า 1 คน + Pre-op บ่าย 1 คน (รุ่น 4) | <strong>วันธรรมดา:</strong> Pre-op 1 คน</div>
@@ -339,7 +345,8 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
           📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
           • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
           • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (เช้า1 + เช้า2 = 6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • แต่ละทีม 3 คนคนละรุ่น (ไม่ซ้ำรุ่น) • เฉลี่ยเช้า1/เช้า2/บ่าย1/บ่าย2 เท่า ๆ กัน • รุ่น 4 = Pre-op • <strong>รุ่น Staff</strong> ได้เวรเช้าวันหยุด <strong>3 เวร/เดือน</strong> (สิทธิ์ก่อน แล้วเวรเช้าที่เหลือเฉลี่ยให้รุ่น 1-3)
+          • แต่ละทีม 3 คนคนละรุ่น (ไม่ซ้ำรุ่น) • เฉลี่ยเช้า1/เช้า2/บ่าย1/บ่าย2 เท่า ๆ กัน • รุ่น 4 = Pre-op • <strong>รุ่น Staff</strong> ได้เวรเช้าวันหยุด <strong>3 เวร/เดือน</strong> (สิทธิ์ก่อน แล้วเวรเช้าที่เหลือเฉลี่ยให้รุ่น 1-3)<br>
+          • <strong>ต่อเนื่อง:</strong> บ่าย→ไม่จัดดึกวันถัดไป • เมื่อวานหยุด(ไม่มีเวร)→วันนี้ไม่จัดดึก • บ่ายห้ามติดกัน 3 วัน (ทั้งวันธรรมดา/วันหยุด) • วันธรรมดา: ดึกกับบ่ายไม่ใช่คนเดียวกันในวันเดียว &amp; บ่ายไม่ติดกัน 2 วัน • วันหยุด: 1 คน 1 เวร/วัน <em>(เงื่อนไขบ่าย/ดึกเป็นแบบผ่อนปรนได้ถ้าคนไม่พอ)</em>
         </div>
         <div class="toolbar">
           <label>เดือน:</label>
@@ -826,6 +833,7 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 // ============ DATA ============
 let nurses=[],schedule={},swaps=[],customHolidays=[],users=[],leaves=[];
 let currentUser=null;
+let nurseSortDir='asc'; // ทิศทางการจัดเรียงหน้าพยาบาล (asc/desc)
 let currentMonth=new Date().toISOString().slice(0,7);
 let homeMonth=new Date().toISOString().slice(0,7);
 let tempUnavailDates=[],tempUnavailShifts=[],tempUnavailWeeks=[],tempUnavailMonths=[];
@@ -1214,7 +1222,7 @@ function addUnavailDate(){
 function removeUnavailDate(d){tempUnavailDates=tempUnavailDates.filter(x=>x!==d);renderUnavailDates()}
 function renderUnavailDates(){
   document.getElementById('unavailDateList').innerHTML=tempUnavailDates.map(d=>
-    `<span class="tag">${d} <span class="remove" onclick="removeUnavailDate('${d}')"></span></span>`
+    `<span class="tag">${d} <span class="remove" onclick="removeUnavailDate('${d}')">✕</span></span>`
   ).join('');
 }
 
@@ -1431,6 +1439,12 @@ function saveBulkEdit(){
   if(save()){closeModal('bulkEditModal');renderNurses();alert('✅ แก้ไขสำเร็จ '+count+' คน')}
 }
 
+function toggleNurseSortDir(){
+  nurseSortDir=nurseSortDir==='asc'?'desc':'asc';
+  const btn=document.getElementById('sortDirBtn');
+  if(btn)btn.textContent=nurseSortDir==='asc'?'⬆️ น้อย→มาก':'⬇️ มาก→น้อย';
+  renderNurses();
+}
 function renderNurses(){
   try{
     const search=(document.getElementById('searchNurse').value||'').toLowerCase();
@@ -1440,6 +1454,17 @@ function renderNurses(){
       const matchGen=!filterGen||n.generation===filterGen;
       return matchSearch&&matchGen;
     });
+    // จัดเรียงตามที่ผู้ใช้เลือก (รุ่น/รหัส/ชื่อ) + สลับขึ้น-ลง
+    const genOrder={'1':1,'2':2,'3':3,'4':4,'staff':5};
+    const sortBy=(document.getElementById('sortNurse')||{}).value||'gen';
+    const byCode=(a,b)=>String(a.code).localeCompare(String(b.code),'th',{numeric:true});
+    const cmpFn={
+      gen:(a,b)=>((genOrder[a.generation]||9)-(genOrder[b.generation]||9))||byCode(a,b),
+      code:byCode,
+      name:(a,b)=>String(a.name).localeCompare(String(b.name),'th')||byCode(a,b)
+    }[sortBy]||((a,b)=>0);
+    const dir=nurseSortDir==='desc'?-1:1;
+    list.sort((a,b)=>dir*cmpFn(a,b));
     document.getElementById('nurseCount').textContent='พบ '+list.length+' / '+nurses.length+' คน';
     document.getElementById('nurseTable').innerHTML=list.map(n=>{
       const shiftList=(n.unavailableShifts||[]).map(s=>`<span class="tag-shift">${s.date.slice(5)} ${SHIFT_LABELS[s.shift]}</span>`).join(' ');
@@ -1464,6 +1489,14 @@ function renderNurses(){
         </tr>
       `;
     }).join('')||'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:30px">ยังไม่มีข้อมูลพยาบาล<br><br><button class="btn btn-primary" onclick="openNurseModal()">➕ เพิ่มพยาบาลคนแรก</button></td></tr>';
+    // แถวสรุปจำนวนรวมล่างสุด: แยกตามรุ่น + รวมทั้งหมด
+    if(nurses.length){
+      const c={};nurses.forEach(n=>{c[n.generation]=(c[n.generation]||0)+1});
+      const part=[['1','รุ่น 1'],['2','รุ่น 2'],['3','รุ่น 3'],['4','รุ่น 4'],['staff','Staff']]
+        .filter(([g])=>c[g]).map(([g,lb])=>lb+' = '+c[g]).join(' · ');
+      document.getElementById('nurseTable').innerHTML+=
+        '<tr style="background:#f1f5f9;font-weight:600"><td colspan="7" style="padding:8px 10px">📊 รวมทั้งหมด '+nurses.length+' คน — '+part+'</td></tr>';
+    }
   }catch(e){
     document.getElementById('nurseTable').innerHTML='<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:30px">เกิดข้อผิดพลาด: '+e.message+'</td></tr>';
   }
@@ -1850,34 +1883,48 @@ function showDayDetail(dateStr){
   else if(we)title+=' 🛌 วันหยุดสุดสัปดาห์';
   document.getElementById('dayModalTitle').textContent=title;
   let html='';
-  if(!daySched){html='<div class="alert alert-warn">️ ยังไม่ได้จัดเวรในวันนี้</div>'}
+  const isAdmin=currentUser&&currentUser.role==='admin';
+  const off=we||hol;
+  if(!daySched){html='<div class="alert alert-warn">️ ยังไม่ได้จัดเวรในวันนี้</div>'+(isAdmin?'<button class="btn btn-primary" onclick="adminCreateDay(\''+dateStr+'\')">➕ สร้างวันว่างเพื่อแก้ไขเอง</button>':'')}
   else{
     const mAll=daySched.morning||[],aAll=daySched.afternoon||[];
     const shifts=[
-      {ids:mAll.slice(0,3),label:'🌅 เช้า ทีม 1',badge:'badge-morning'},
-      {ids:mAll.slice(3),label:'🌅 เช้า ทีม 2',badge:'badge-morning'},
-      {ids:aAll.slice(0,3),label:'☀️ บ่าย ทีม 1',badge:'badge-afternoon'},
-      {ids:aAll.slice(3),label:'☀️ บ่าย ทีม 2',badge:'badge-afternoon'},
-      {ids:daySched.night||[],label:'🌙 กะดึก',badge:'badge-night',night:true},
-      {ids:daySched.preop_morning||[],label:'🏥 Pre-op เช้า (วันหยุด)',badge:'badge-preop'},
-      {ids:daySched.preop_afternoon||[],label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop'},
-      {ids:daySched.preop||[],label:'🏥 Pre-op',badge:'badge-preop'}
+      {ids:mAll.slice(0,3),label:'🌅 เช้า ทีม 1',badge:'badge-morning',slot:'morning1'},
+      {ids:mAll.slice(3),label:'🌅 เช้า ทีม 2',badge:'badge-morning',slot:'morning2'},
+      {ids:aAll.slice(0,3),label:'☀️ บ่าย ทีม 1',badge:'badge-afternoon',slot:'afternoon1'},
+      {ids:aAll.slice(3),label:'☀️ บ่าย ทีม 2',badge:'badge-afternoon',slot:'afternoon2'},
+      {ids:daySched.night||[],label:'🌙 กะดึก',badge:'badge-night',night:true,slot:'night'},
+      {ids:daySched.preop_morning||[],label:'🏥 Pre-op เช้า (วันหยุด)',badge:'badge-preop',slot:'preop_morning'},
+      {ids:daySched.preop_afternoon||[],label:'🏥 Pre-op บ่าย (วันหยุด)',badge:'badge-preop',slot:'preop_afternoon'},
+      {ids:daySched.preop||[],label:'🏥 Pre-op',badge:'badge-preop',slot:'preop'}
     ];
+    // แอดมินแก้ไขเอง: แสดงกะที่เกี่ยวกับวันนั้นแม้ยังว่าง (วันหยุด=เช้า2ทีม/บ่าย2ทีม/ดึก/Pre-op เช้า+บ่าย | วันธรรมดา=บ่าย2ทีม/ดึก/Pre-op)
+    const relevant=off?['morning1','morning2','afternoon1','afternoon2','night','preop_morning','preop_afternoon']:['afternoon1','afternoon2','night','preop'];
     const oncall=daySched.night_oncall||[];
+    const optAll=nurses.map(n=>'<option value="'+n.id+'">'+n.code+' - '+n.name+' (รุ่น '+n.generation+')</option>').join('');
     shifts.forEach(s=>{
       const ids=s.ids||[];
-      if(ids.length){
-        html+='<div style="margin-bottom:12px"><div><span class="badge '+s.badge+'">'+s.label+'</span></div>';
-        ids.forEach(id=>{
-          const n=nurses.find(x=>x.id===id);
-          const isOncall=s.night&&oncall.includes(id);
-          if(n)html+='<div style="padding:6px 10px;background:'+(isOncall?'#fff5e6':'#f8fafc')+';border-radius:4px;margin-top:4px'+(isOncall?';border-left:3px solid var(--warning)':'')+'"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(isOncall?'<span class="badge" style="background:var(--warning);color:#fff">📞 On call</span> ':'')+(n.phone?'📞 '+n.phone:'')+'</div>';
-        });
+      if(!ids.length&&!(isAdmin&&relevant.includes(s.slot)))return;
+      html+='<div style="margin-bottom:12px"><div><span class="badge '+s.badge+'">'+s.label+'</span></div>';
+      ids.forEach(id=>{
+        const n=nurses.find(x=>x.id===id);
+        const isOncall=s.night&&oncall.includes(id);
+        if(!n)return;
+        html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:'+(isOncall?'#fff5e6':'#f8fafc')+';border-radius:4px;margin-top:4px'+(isOncall?';border-left:3px solid var(--warning)':'')+'">';
+        html+='<span style="flex:1"><strong>'+n.code+'</strong> - '+n.name+' <span class="badge badge-gen'+n.generation+'">รุ่น '+n.generation+'</span> '+(isOncall?'<span class="badge" style="background:var(--warning);color:#fff">📞 On call</span> ':'')+(n.phone?'📞 '+n.phone:'')+'</span>';
+        if(isAdmin){
+          if(s.night)html+='<button class="btn btn-sm btn-secondary" title="สลับ On call" onclick="adminToggleOncall(\''+dateStr+'\',\''+id+'\')">📞</button>';
+          html+='<button class="btn btn-sm btn-danger" title="เอาออกจากกะนี้" onclick="adminRemoveFromShift(\''+dateStr+'\',\''+s.slot+'\',\''+id+'\')">✕</button>';
+        }
         html+='</div>';
+      });
+      if(!ids.length)html+='<div style="color:#94a3b8;font-size:11px;margin-top:4px">— ยังไม่มีคน —</div>';
+      if(isAdmin){
+        html+='<div style="display:flex;gap:6px;margin-top:6px"><select id="addShift_'+s.slot+'" style="flex:1;font-size:12px;padding:4px">'+optAll+'</select><button class="btn btn-sm btn-success" onclick="adminAddToShift(\''+dateStr+'\',\''+s.slot+'\')">➕ เพิ่ม</button></div>';
       }
+      html+='</div>';
     });
     // เวรกำหนดเอง (custom)
-    const isAdmin=currentUser&&currentUser.role==='admin';
     customKeysOf(daySched).forEach(k=>{
       const ids=daySched[k]||[];const c=parseCustom(k);
       html+='<div style="margin-bottom:12px"><div><span class="badge duty-chip custom" style="font-size:11px">➕ '+c.name+' ('+(SLOT_LABELS[c.slot]||c.slot)+')</span>'+(isAdmin?' <button class="btn btn-sm btn-danger" onclick="removeCustomShift(\''+dateStr+'\',\''+k.replace(/'/g,"\\'")+'\')">ลบ</button>':'')+'</div>';
@@ -1888,6 +1935,53 @@ function showDayDetail(dateStr){
   }
   document.getElementById('dayModalContent').innerHTML=html;
   openModal('dayModal');
+}
+// ===== แอดมินแก้ไขเวรรายวัน/รายคน (จากหน้าปฏิทิน) =====
+function ensureDay(dateStr){
+  const mk=dateStr.slice(0,7),dn=parseInt(dateStr.slice(8,10));
+  if(!schedule[mk])schedule[mk]={};
+  if(!schedule[mk][dn])schedule[mk][dn]={morning:[],afternoon:[],night:[],night_oncall:[],preop:[],preop_morning:[],preop_afternoon:[]};
+  return schedule[mk][dn];
+}
+function adminCreateDay(dateStr){ensureDay(dateStr);if(save()){renderCalendar();showDayDetail(dateStr)}}
+function adminAddToShift(dateStr,slot){
+  const sel=document.getElementById('addShift_'+slot);if(!sel||!sel.value)return;
+  const id=sel.value;const ds=ensureDay(dateStr);
+  const base=slot.indexOf('morning')===0?'morning':(slot.indexOf('afternoon')===0?'afternoon':null);
+  if(base){
+    const arr=ds[base]||(ds[base]=[]);
+    if(arr.includes(id)){alert('คนนี้อยู่ในกะนี้แล้ว');return}
+    let t1=arr.slice(0,3),t2=arr.slice(3);
+    if(slot.endsWith('1')){if(t1.length>=3){alert('ทีม 1 เต็มแล้ว (3 คน)');return}t1.push(id)}
+    else{if(t2.length>=3){alert('ทีม 2 เต็มแล้ว (3 คน)');return}t2.push(id)}
+    ds[base]=[...t1,...t2];
+  }else{
+    const arr=ds[slot]||(ds[slot]=[]);
+    if(arr.includes(id)){alert('คนนี้อยู่ในกะนี้แล้ว');return}
+    arr.push(id);
+  }
+  if(save()){renderCalendar();showDayDetail(dateStr)}
+}
+function adminRemoveFromShift(dateStr,slot,id){
+  const ds=ensureDay(dateStr);
+  const base=slot.indexOf('morning')===0?'morning':(slot.indexOf('afternoon')===0?'afternoon':null);
+  if(base){
+    let t1=ds[base].slice(0,3),t2=ds[base].slice(3);
+    if(slot.endsWith('1'))t1=t1.filter(x=>x!==id);else t2=t2.filter(x=>x!==id);
+    ds[base]=[...t1,...t2];
+  }else{
+    ds[slot]=(ds[slot]||[]).filter(x=>x!==id);
+  }
+  if(slot==='night')ds.night_oncall=(ds.night_oncall||[]).filter(x=>x!==id);
+  if(save()){renderCalendar();showDayDetail(dateStr)}
+}
+function adminToggleOncall(dateStr,id){
+  const ds=ensureDay(dateStr);
+  if(!(ds.night||[]).includes(id)){alert('ต้องอยู่กะดึกก่อนจึงจะเป็น On call ได้');return}
+  const oc=ds.night_oncall||(ds.night_oncall=[]);
+  const i=oc.indexOf(id);
+  if(i>=0)oc.splice(i,1);else{oc.length=0;oc.push(id)} // ดึก On call 1 คนต่อกะ
+  if(save()){renderCalendar();showDayDetail(dateStr)}
 }
 
 // ============ AUTO SCHEDULE ============
@@ -1961,6 +2055,14 @@ function autoSchedule(){
     const prevIsOff=isOffDay(prevDateStr);
     const prevSched=(pKey===month)?monthSched[pd.getDate()]:(schedule[pKey]&&schedule[pKey][pd.getDate()]);
     const prevAfternoon=new Set(prevSched?(prevSched.afternoon||[]):[]);
+    // เมื่อวานซืน (D-2): ใช้กับกติกา "ห้ามบ่าย 3 วันติด"
+    const pd2=new Date(y,m-1,d-2);
+    const pKey2=pd2.getFullYear()+'-'+String(pd2.getMonth()+1).padStart(2,'0');
+    const prevSched2=(pKey2===month)?monthSched[pd2.getDate()]:(schedule[pKey2]&&schedule[pKey2][pd2.getDate()]);
+    const prev2Afternoon=new Set(prevSched2?(prevSched2.afternoon||[]):[]);
+    // หลบกะดึกแบบ soft: (1) บ่ายเมื่อวาน → ไม่ควรดึกวันนี้  (2) เมื่อวานหยุด/ไม่มีเวรเลย → ไม่ควรดึกวันนี้
+    const nightAvoid=new Set(prevAfternoon);
+    nurses.forEach(n=>{if(!(prevSched&&nurseHasAnyShift(prevSched,n.id)))nightAvoid.add(n.id)});
 
     const unavailableShifts={};
     nurses.forEach(n=>{
@@ -2034,14 +2136,14 @@ function autoSchedule(){
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
     // ดันคนที่อยู่เวรบ่ายเมื่อวานไปท้ายคิวแต่ละรุ่น (ยังเลือกได้ถ้าคนไม่พอ) — คงลำดับ cmpBy เดิม (sort เสถียร)
-    ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>(prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))});
+    ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>(nightAvoid.has(a.id)?1:0)-(nightAvoid.has(b.id)?1:0))});
     const nightTeam=[...fixedByShift.night]; // คน fix กะดึกมาก่อน
     ['1','2','3'].forEach(g=>{
       if(nightTeam.length<3&&nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
     });
     if(nightTeam.length<3){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
-      remaining.sort((a,b)=>((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy('night')(a,b));
+      remaining.sort((a,b)=>((nightAvoid.has(a.id)?1:0)-(nightAvoid.has(b.id)?1:0))||cmpBy('night')(a,b));
       while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
     }
     nightTeam.forEach(n=>{daySched.night.push(n.id);assign(n,'night')});
@@ -2077,14 +2179,19 @@ function autoSchedule(){
     {
       const nightSet=new Set(daySched.night);
       const consecSoft=(!offDay&&!prevIsOff); // วันธรรมดา 2 วันติด: ดันคนบ่ายเมื่อวานไปท้าย
+      // ห้ามบ่าย 3 วันติด (ทั้งวันธรรมดาและวันหยุด): คนที่บ่ายมาแล้ว 2 วันก่อนหน้า (D-1 และ D-2) ห้ามบ่ายวันนี้
+      // ใช้เป็น fallback ท้ายสุดเท่านั้น (กันตารางล่มเมื่อคนไม่พอจริง ๆ)
+      const streak2=(id)=>prevAfternoon.has(id)&&prev2Afternoon.has(id);
       const buildAft=(tk,fixedList)=>{
         const pool=getAvailableByGen(tk);
         let flat=['1','2','3'].flatMap(g=>pool[g]||[]).filter(n=>!daySched.afternoon.includes(n.id));
         if(!offDay)flat=flat.filter(n=>!nightSet.has(n.id)); // วันธรรมดา: ไม่ซ้ำดึกวันเดียวกัน
         flat.sort((a,b)=>consecSoft?(((prevAfternoon.has(a.id)?1:0)-(prevAfternoon.has(b.id)?1:0))||cmpBy(tk)(a,b)):cmpBy(tk)(a,b));
+        const primary=flat.filter(n=>!streak2(n.id)),fallback=flat.filter(n=>streak2(n.id));
         const team=[],uG=new Set();
-        (fixedList||[]).forEach(n=>{if(team.length<3&&!daySched.afternoon.includes(n.id)){team.push(n);uG.add(n.generation)}});
-        flat.forEach(n=>{if(team.length<3&&!uG.has(n.generation)){team.push(n);uG.add(n.generation)}});
+        (fixedList||[]).forEach(n=>{if(team.length<3&&!daySched.afternoon.includes(n.id)){team.push(n);uG.add(n.generation)}}); // fix มาก่อน
+        primary.forEach(n=>{if(team.length<3&&!uG.has(n.generation)){team.push(n);uG.add(n.generation)}});
+        fallback.forEach(n=>{if(team.length<3&&!uG.has(n.generation)){team.push(n);uG.add(n.generation)}}); // ยอมบ่าย 3 วันติดเฉพาะเมื่อคนไม่พอ
         return team;
       };
       buildAft('afternoon1',fixedByShift.afternoon).forEach(n=>{daySched.afternoon.push(n.id);assign(n,'afternoon1')});
@@ -2209,7 +2316,38 @@ function renderSwapActions(){
   if(role==='requester'||role==='admin'){
     html+='<button class="btn btn-primary" onclick="openSwapModal()">➕ สร้างคำขอแลกเวร</button>';
   }
+  if(role==='admin'||role==='approver'){
+    const approvedCount=swaps.filter(s=>s.status==='approved').length;
+    html+=' <button class="btn btn-success" onclick="exportSwapHistory()">📊 Export ประวัติการแลก (Excel)'+(approvedCount?' ('+approvedCount+')':'')+'</button>';
+  }
   div.innerHTML=html;
+}
+// Export ประวัติการแลก/ยกเวร (ที่อนุมัติแล้ว) เป็น Excel
+function exportSwapHistory(){
+  try{
+    const rows=swaps.filter(s=>s.status==='approved');
+    if(rows.length===0){alert('⚠️ ยังไม่มีประวัติการแลก/ยกเวรที่อนุมัติแล้ว');return}
+    const nm=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name:(id||'-')};
+    const shLabel=(k)=>SHIFT_LABELS[k]||k||'-';
+    const bd='border:0.5px solid #999;';const ctr='text-align:center;';
+    let h='<table style="border-collapse:collapse;font-family:Sarabun,sans-serif;font-size:11px">';
+    h+='<tr>'+['ลำดับ','ชื่อผู้ยื่นคำขอแลก','วันที่แลก/ยก','เวร','ชื่อผู้รับแลก','วันที่แลก','เวร']
+      .map(t=>'<td style="'+bd+ctr+'font-weight:bold;background:#F2F2F2;padding:4px 6px">'+t+'</td>').join('')+'</tr>';
+    rows.forEach((s,i)=>{
+      const give=s.type==='giveaway';
+      const date2=give?s.date:(s.date2||s.date); // ยกเวร = วันเดียวกัน
+      const c=[i+1,nm(s.from),s.date,shLabel(s.shift),nm(s.to),date2,shLabel(s.shift)];
+      h+='<tr>'+c.map(v=>'<td style="'+bd+ctr+'padding:2px 6px">'+v+'</td>').join('')+'</tr>';
+    });
+    h+='</table>';
+    const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ประวัติการแลกเวร</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>'+h+'</body></html>';
+    const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download='ประวัติการแลกเวร_'+(new Date().toISOString().slice(0,10))+'.xls';
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(link.href),1500);
+  }catch(e){alert('❌ Export ไม่สำเร็จ: '+e.message)}
 }
 function onSwapTypeChange(){
   const t=document.querySelector('input[name="swapType"]:checked').value;
