@@ -1,0 +1,23 @@
+      <div class="card">
+        <h2>⚙️ จัดเวรผู้ช่วยพยาบาลอัตโนมัติ</h2>
+        <div class="alert alert-info">
+          📋 <strong>เงื่อนไขการจัดเวร NA:</strong><br>
+          • <strong>วันธรรมดา (จ-ศ):</strong> เช้าทำการ + บ่าย + ดึก<br>
+          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> เช้า + บ่าย + ดึก<br>
+          • เฉลี่ยเวรเท่า ๆ กันทุกคน • เลี่ยงวันลา(อนุมัติแล้ว)/วันที่ไม่สะดวก • ไม่ซ้อนเวรในวันเดียวกัน • บ่าย→ไม่จัดดึกวันถัดไป
+        </div>
+        <div class="toolbar" style="flex-wrap:wrap;gap:10px">
+          <label>เดือน:</label>
+          <input type="month" id="naScheduleMonth">
+          <label style="font-size:12px">เช้า/คน:</label><input type="number" id="naCntMorning" value="2" min="0" style="width:56px" class="search-input">
+          <label style="font-size:12px">บ่าย/คน:</label><input type="number" id="naCntAfternoon" value="2" min="0" style="width:56px" class="search-input">
+          <label style="font-size:12px">ดึก/คน:</label><input type="number" id="naCntNight" value="2" min="0" style="width:56px" class="search-input">
+          <label style="font-size:12px">เช้าทำการ/คน:</label><input type="number" id="naCntWorkday" value="1" min="0" style="width:56px" class="search-input">
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-success" onclick="autoScheduleNA()">🤖 จัดเวรอัตโนมัติ</button>
+          <button class="btn btn-danger" onclick="clearNASchedule()">🗑️ ล้างเวร</button>
+          <span style="margin-left:auto;font-size:12px;color:#64748b">👥 NA ในระบบ: <strong id="infoAssistants">0</strong> คน</span>
+        </div>
+        <div id="naScheduleResult"></div>
+      </div>

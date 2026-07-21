@@ -41,6 +41,8 @@ body{background:radial-gradient(1200px 600px at 100% -10%,#e2f5f1 0%,rgba(226,24
 .tab{padding:9px 15px;cursor:pointer;border:none;background:none;font-size:12.5px;font-weight:600;color:var(--ink-mute);border-radius:999px;white-space:nowrap;transition:all .15s var(--ease)}
 .tab:hover{color:var(--primary-dark);background:var(--primary-light)}
 .tab.active{color:#fff;background:var(--primary);box-shadow:0 4px 12px rgba(13,148,136,.32)}
+.tab-divider{display:inline-flex;align-items:center;padding:0 10px 0 12px;margin-left:4px;border-left:2px dashed #cbd5e1;font-size:11px;font-weight:800;color:#16a34a;white-space:nowrap}
+.tab-na{color:#166534}.tab-na:hover{color:#166534;background:#dcfce7}.tab-na.active{background:#16a34a;color:#fff;box-shadow:0 4px 12px rgba(22,163,74,.3)}
 .tab.hidden{display:none}
 .container{padding:18px 16px;max-width:1400px;margin:0 auto}
 .panel{display:none;animation:fadeIn .22s var(--ease)}
@@ -73,13 +75,14 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .badge-morning{background:#fef3c7;color:#92400e}.badge-afternoon{background:#dbeafe;color:#1e40af}
 .badge-night{background:#293548;color:#fff}.badge-preop{background:#e6e2ff;color:#4338ca}
 .badge-role-admin{background:#fde3ea;color:#be123c}.badge-role-approver{background:#fef0d6;color:#b5730a}
-.badge-role-requester{background:var(--primary-tint);color:var(--primary-darker)}
+.badge-role-requester{background:var(--primary-tint);color:var(--primary-darker)}.badge-role-assistant{background:#dcfce7;color:#166534}
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,38,35,.5);backdrop-filter:blur(3px);z-index:1000;align-items:center;justify-content:center;padding:14px}
 .modal.show{display:flex!important;animation:modalIn .18s var(--ease)}
 @keyframes modalIn{from{opacity:0}to{opacity:1}}
 .modal-content{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:modalPop .2s var(--ease)}
 @keyframes modalPop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .modal-content h3{color:var(--ink);margin-bottom:16px;font-size:17px;font-weight:700}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .modal-section{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
 .modal-section:first-of-type{border-top:none;margin-top:0;padding-top:0}
 .modal-section-title{font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:9px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.4px}
@@ -237,6 +240,14 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
     <button class="tab" onclick="showPanel('stats',this)" id="tab-stats">📊 สถิติ</button>
     <button class="tab" onclick="showPanel('settings',this)" id="tab-settings">⚡ ตั้งค่า</button>
     <button class="tab" onclick="showPanel('users',this)" id="tab-users">👥 ผู้ใช้</button>
+    <span class="tab-divider" id="naDivider">🧑‍🔧 ผู้ช่วยพยาบาล</span>
+    <button class="tab tab-na" onclick="showPanel('na-home',this)" id="tab-na-home">🏠 เวรฉัน</button>
+    <button class="tab tab-na" onclick="showPanel('na-assistants',this)" id="tab-na-assistants">👥 รายชื่อ NA</button>
+    <button class="tab tab-na" onclick="showPanel('na-schedule',this)" id="tab-na-schedule">⚙️ จัดเวร NA</button>
+    <button class="tab tab-na" onclick="showPanel('na-calendar',this)" id="tab-na-calendar">📅 ปฏิทิน NA</button>
+    <button class="tab tab-na" onclick="showPanel('na-swap',this)" id="tab-na-swap">🔄 แลกเวร NA</button>
+    <button class="tab tab-na" onclick="showPanel('na-leave',this)" id="tab-na-leave">🌴 ลา NA</button>
+    <button class="tab tab-na" onclick="showPanel('na-stats',this)" id="tab-na-stats">📊 สถิติ NA</button>
   </div>
 
   <div class="container">
@@ -251,6 +262,13 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
     <div id="panel-stats" class="panel" data-src="panels/stats.html"></div>
     <div id="panel-settings" class="panel" data-src="panels/settings.html"></div>
     <div id="panel-users" class="panel" data-src="panels/users.html"></div>
+    <div id="panel-na-home" class="panel" data-src="panels/na-home.html"></div>
+    <div id="panel-na-assistants" class="panel" data-src="panels/na-assistants.html"></div>
+    <div id="panel-na-schedule" class="panel" data-src="panels/na-schedule.html"></div>
+    <div id="panel-na-calendar" class="panel" data-src="panels/na-calendar.html"></div>
+    <div id="panel-na-swap" class="panel" data-src="panels/na-swap.html"></div>
+    <div id="panel-na-leave" class="panel" data-src="panels/na-leave.html"></div>
+    <div id="panel-na-stats" class="panel" data-src="panels/na-stats.html"></div>
 
   </div>
 </div>
@@ -567,15 +585,20 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
     <div class="form-group"><label>รหัสผ่าน *</label><input type="password" id="userPassword"></div>
     <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="userFullname"></div>
     <div class="form-group"><label>บทบาท *</label>
-      <select id="userRole">
-        <option value="requester">ผู้ยื่นคำขอแลกเวร</option>
+      <select id="userRole" onchange="onUserRoleChange()">
+        <option value="requester">ผู้ยื่นคำขอแลกเวร (พยาบาล)</option>
         <option value="approver">ผู้อนุมัติคำขอ</option>
         <option value="admin">ผู้ดูแลระบบ (จัดการทั้งหมด)</option>
+        <option value="assistant">ผู้ช่วยพยาบาล (NA)</option>
       </select>
     </div>
-    <div class="form-group"><label>👩‍⚕️ ผูกกับพยาบาล (ตามรหัส)</label>
+    <div class="form-group" id="userNurseRow"><label>👩‍⚕️ ผูกกับพยาบาล (ตามรหัส)</label>
       <select id="userNurseCode"></select>
       <div style="font-size:11px;color:#64748b;margin-top:4px">ผูกบัญชีกับพยาบาลเพื่อให้ระบบรู้ว่าเวร/การลาของบัญชีนี้เป็นของใคร</div>
+    </div>
+    <div class="form-group" id="userAssistantRow" style="display:none"><label>🧑‍🔧 ผูกกับผู้ช่วยพยาบาล (NA)</label>
+      <select id="userAssistantCode"></select>
+      <div style="font-size:11px;color:#64748b;margin-top:4px">ผูกบัญชี NA เพื่อให้ระบบรู้ว่าเวร/การลาของบัญชีนี้เป็นของใคร</div>
     </div>
     <div class="form-group" id="userLineRow" style="display:none">
       <label>💬 บัญชี LINE ที่เชื่อมไว้</label>
@@ -588,9 +611,93 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
   </div>
 </div>
 
+<!-- Modal ผู้ช่วยพยาบาล (NA) -->
+<div class="modal" id="assistantModal">
+  <div class="modal-content">
+    <h3 id="assistantModalTitle">เพิ่มผู้ช่วยพยาบาล</h3>
+    <input type="hidden" id="assistantId">
+    <div class="modal-section">
+      <div class="modal-section-title">👤 ข้อมูลพื้นฐาน</div>
+      <div class="form-group"><label>รหัส *</label><input type="text" id="assistantCode" placeholder="เช่น NA001"></div>
+      <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="assistantName" placeholder="เช่น สมชาย ใจงาม"></div>
+      <div class="form-group" style="margin-bottom:0"><label>เบอร์โทรศัพท์</label><input type="text" id="assistantPhone" placeholder="เช่น 081-234-5678"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">🚫 วันในสัปดาห์ที่ไม่สะดวก</div>
+      <div id="assistantWeekdays" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">🚫 กะที่ไม่สะดวก</div>
+      <label style="margin-right:12px"><input type="checkbox" class="naUnavailShift" value="morning"> เช้า</label>
+      <label style="margin-right:12px"><input type="checkbox" class="naUnavailShift" value="afternoon"> บ่าย</label>
+      <label style="margin-right:12px"><input type="checkbox" class="naUnavailShift" value="night"> ดึก</label>
+    </div>
+    <div class="modal-section" style="border:none">
+      <div class="modal-section-title">🗓️ วันที่เฉพาะที่ลา/ไม่สะดวก</div>
+      <div class="toolbar" style="margin-bottom:6px">
+        <input type="date" id="assistantUnavailDate">
+        <button class="btn btn-sm btn-secondary" onclick="addAssistantUnavailDate()">➕ เพิ่ม</button>
+      </div>
+      <div id="assistantUnavailDateList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('assistantModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveAssistant()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แลกเวร NA -->
+<div class="modal" id="naSwapModal">
+  <div class="modal-content">
+    <h3>ขอแลก/ยกเวร (NA)</h3>
+    <div class="modal-section">
+      <label style="margin-right:12px"><input type="radio" name="naSwapType" value="swap" checked> 🔄 แลกเวร</label>
+      <label><input type="radio" name="naSwapType" value="giveaway"> ➡️ ยกเวร</label>
+    </div>
+    <div class="form-group"><label>ผู้ขอ (เวรของ)</label><select id="naSwapFrom"></select></div>
+    <div class="form-group"><label>วันที่เวรเดิม</label><input type="date" id="naSwapDate"></div>
+    <div class="form-group"><label>กะ</label>
+      <select id="naSwapShift">
+        <option value="morning">เช้า</option><option value="afternoon">บ่าย</option>
+        <option value="night">ดึก</option><option value="morning_workday">เช้าทำการ</option>
+      </select>
+    </div>
+    <div class="form-group"><label>ผู้รับแทน</label><select id="naSwapTo"></select></div>
+    <div class="form-group" id="naSwapDate2Row"><label>วันที่รับแทน (แลกเวร)</label><input type="date" id="naSwapDate2"></div>
+    <div class="form-group"><label>เหตุผล</label><input type="text" id="naSwapReason" placeholder="ระบุเหตุผล (ถ้ามี)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('naSwapModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNASwap()">💾 ส่งคำขอ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ลา NA -->
+<div class="modal" id="naLeaveModal">
+  <div class="modal-content">
+    <h3>ขอลา (NA)</h3>
+    <div class="form-group"><label>ผู้ช่วยพยาบาล</label><select id="naLeaveAssistant"></select></div>
+    <div class="form-group"><label>ประเภทการลา</label>
+      <select id="naLeaveType"><option value="personal">📄 ลากิจ</option><option value="sick">🤒 ลาป่วย</option><option value="vacation">🌴 ลาพักร้อน</option></select>
+    </div>
+    <div class="form-group"><label>ตั้งแต่วันที่</label><input type="date" id="naLeaveFrom"></div>
+    <div class="form-group"><label>ถึงวันที่</label><input type="date" id="naLeaveTo"></div>
+    <div class="form-group"><label>เหตุผล</label><input type="text" id="naLeaveReason" placeholder="ระบุเหตุผล (ถ้ามี)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('naLeaveModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNALeave()">💾 ส่งคำขอ</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============ DATA ============
 let nurses=[],schedule={},swaps=[],customHolidays=[],users=[],leaves=[];
+// ===== NA (ผู้ช่วยพยาบาล) — โมดูลแยกอิสระ ไม่ปนกับข้อมูลพยาบาล =====
+let assistants=[],naSchedule={},naSwaps=[],naLeaves=[];
+let naMonth=new Date().toISOString().slice(0,7);      // เดือนที่ใช้ในหน้าจัดเวร/ปฏิทิน NA
+let naHomeMonth=new Date().toISOString().slice(0,7);   // เดือนที่ใช้ในหน้าเวรฉัน NA
 let currentUser=null;
 let nurseSortDir='asc'; // ทิศทางการจัดเรียงหน้าพยาบาล (asc/desc)
 let currentMonth=new Date().toISOString().slice(0,7);
@@ -606,9 +713,13 @@ try{
   customHolidays=JSON.parse(localStorage.getItem('customHolidays')||'[]');
   users=JSON.parse(localStorage.getItem('users')||'[]');
   leaves=JSON.parse(localStorage.getItem('leaves')||'[]');
+  assistants=JSON.parse(localStorage.getItem('assistants')||'[]');
+  naSchedule=JSON.parse(localStorage.getItem('naSchedule')||'{}');
+  naSwaps=JSON.parse(localStorage.getItem('naSwaps')||'[]');
+  naLeaves=JSON.parse(localStorage.getItem('naLeaves')||'[]');
   const savedUser=localStorage.getItem('currentUser');
   if(savedUser)currentUser=JSON.parse(savedUser);
-}catch(e){nurses=[];schedule={};swaps=[];customHolidays=[];users=[];leaves=[]}
+}catch(e){nurses=[];schedule={};swaps=[];customHolidays=[];users=[];leaves=[];assistants=[];naSchedule={};naSwaps=[];naLeaves=[]}
 
 if(users.length===0){
   users=[
@@ -664,7 +775,7 @@ const MONTH_TH=['มกราคม','กุมภาพันธ์','มีน
 const MONTH_SHORT_TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const SHIFT_LABELS={morning:'เช้า',afternoon:'บ่าย',night:'ดึก',preop:'Pre-op',preop_morning:'Pre-op เช้า',preop_afternoon:'Pre-op บ่าย'};
 const MONTH_NAMES={'01':'ม.ค.','02':'ก.พ.','03':'มี.ค.','04':'เม.ย.','05':'พ.ค.','06':'มิ.ย.','07':'ก.ค.','08':'ส.ค.','09':'ก.ย.','10':'ต.ค.','11':'พ.ย.','12':'ธ.ค.'};
-const ROLE_LABELS={admin:'ผู้ดูแลระบบ',approver:'ผู้อนุมัติ',requester:'ผู้ยื่นคำขอ'};
+const ROLE_LABELS={admin:'ผู้ดูแลระบบ',approver:'ผู้อนุมัติ',requester:'ผู้ยื่นคำขอ',assistant:'ผู้ช่วยพยาบาล (NA)'};
 
 // ============ TOAST NOTIFICATIONS ============
 // window.alert is overridden below so every existing alert('✅ ...'/'❌ ...'/'⚠️ ...') call
@@ -713,6 +824,10 @@ function save(){
     localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
     localStorage.setItem('users',JSON.stringify(users));
     localStorage.setItem('leaves',JSON.stringify(leaves));
+    localStorage.setItem('assistants',JSON.stringify(assistants));
+    localStorage.setItem('naSchedule',JSON.stringify(naSchedule));
+    localStorage.setItem('naSwaps',JSON.stringify(naSwaps));
+    localStorage.setItem('naLeaves',JSON.stringify(naLeaves));
     if(currentUser)localStorage.setItem('currentUser',JSON.stringify(currentUser));
     cloudPush(false);
     return true;
@@ -745,17 +860,30 @@ async function cloudPull(manual){
     if(data.customHolidays)customHolidays=data.customHolidays;
     if(data.users&&data.users.length)users=data.users;
     if(data.leaves)leaves=data.leaves;
+    if(data.assistants)assistants=data.assistants;
+    if(data.naSchedule)naSchedule=data.naSchedule;
+    if(data.naSwaps)naSwaps=data.naSwaps;
+    if(data.naLeaves)naLeaves=data.naLeaves;
     localStorage.setItem('nurses',JSON.stringify(nurses));
     localStorage.setItem('schedule',JSON.stringify(schedule));
     localStorage.setItem('swaps',JSON.stringify(swaps));
     localStorage.setItem('customHolidays',JSON.stringify(customHolidays));
     localStorage.setItem('users',JSON.stringify(users));
     localStorage.setItem('leaves',JSON.stringify(leaves));
+    localStorage.setItem('assistants',JSON.stringify(assistants));
+    localStorage.setItem('naSchedule',JSON.stringify(naSchedule));
+    localStorage.setItem('naSwaps',JSON.stringify(naSwaps));
+    localStorage.setItem('naLeaves',JSON.stringify(naLeaves));
     cloudLastSync=new Date().toISOString();
     localStorage.setItem('cloudLastSync',cloudLastSync);
     if(status)status.textContent='✅ ซิงค์ล่าสุด: '+new Date(cloudLastSync).toLocaleString('th-TH');
     if(document.getElementById('mainApp')&&document.getElementById('mainApp').style.display!=='none'){
-      renderNurses();renderCalendar();renderHolidays();renderSwaps();renderLeaves();renderStats();renderUsers();updateInfo();renderHome();
+      if(currentUser&&currentUser.role==='assistant'){
+        renderNAHome();renderNACalendar();renderNASwaps();renderNALeaves();renderNAStats();updateInfo();
+      }else{
+        renderNurses();renderCalendar();renderHolidays();renderSwaps();renderLeaves();renderStats();renderUsers();updateInfo();renderHome();
+        renderAssistants();renderNACalendar();renderNAStats();renderNASwaps();renderNALeaves();renderNAHome();
+      }
     }
     if(manual)alert('✅ ดึงข้อมูลจากฐานข้อมูลออนไลน์สำเร็จ');
     return true;
@@ -771,7 +899,7 @@ async function cloudPush(manual){
   try{
     if(manual&&status)status.textContent='⏳ กำลังส่งข้อมูล...';
     const res=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({nurses,schedule,swaps,customHolidays,users,leaves})});
+      body:JSON.stringify({nurses,schedule,swaps,customHolidays,users,leaves,assistants,naSchedule,naSwaps,naLeaves})});
     const result=await res.json();
     if(result.error)throw new Error(result.error);
     cloudLastSync=new Date().toISOString();
@@ -864,30 +992,53 @@ function showLoginNotice(){
 }
 function applyRolePermissions(){
   const role=currentUser.role;
+  const isAssistant=role==='assistant';
   // admin: เห็นทุก tab
   // approver: เห็น calendar, schedule, holidays, swap, stats (ไม่เห็น nurses, settings, users)
   // requester: เห็น calendar, swap, stats (ไม่เห็น nurses, schedule, holidays, settings, users)
+  // assistant (NA): เห็นเฉพาะแท็บ NA — ซ่อนข้อมูลพยาบาลทั้งหมด
   const tabVisibility={
-    home:true,
+    home:!isAssistant,
     nurses:role==='admin',
-    calendar:true,
+    calendar:!isAssistant,
     schedule:role==='admin'||role==='approver',
     holidays:role==='admin',
-    swap:true,
-    leave:true,
-    stats:true,
+    swap:!isAssistant,
+    leave:!isAssistant,
+    stats:!isAssistant,
     settings:role==='admin',
-    users:role==='admin'
+    users:role==='admin',
+    // แท็บ NA: admin จัดการได้ทั้งหมด; assistant เห็นเฉพาะของตัวเอง (ไม่เห็นรายชื่อ/จัดเวร)
+    'na-home':isAssistant||role==='admin',
+    'na-assistants':role==='admin',
+    'na-schedule':role==='admin',
+    'na-calendar':isAssistant||role==='admin',
+    'na-swap':isAssistant||role==='admin',
+    'na-leave':isAssistant||role==='admin',
+    'na-stats':isAssistant||role==='admin'
   };
   Object.keys(tabVisibility).forEach(k=>{
     const tab=document.getElementById('tab-'+k);
     if(tab)tab.style.display=tabVisibility[k]?'':'none';
   });
+  // เส้นแบ่งกลุ่ม NA: แสดงเฉพาะ admin (ที่เห็นทั้งฝั่งพยาบาลและ NA); assistant เห็นแต่ NA จึงไม่ต้องมีเส้นแบ่ง
+  const divider=document.getElementById('naDivider');
+  if(divider)divider.style.display=(role==='admin')?'':'none';
 }
 
 // ============ APP INIT ============
 function initApp(){
   document.getElementById('currentDate').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // ตั้งค่าเดือนเริ่มต้นของหน้า NA (มีอยู่ทุก role)
+  ['naScheduleMonth','naCalMonth','naStatsMonth'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=naMonth;});
+  const nhm=document.getElementById('naHomeMonth');if(nhm&&!nhm.value)nhm.value=naHomeMonth;
+  const isAssistant=currentUser&&currentUser.role==='assistant';
+  if(isAssistant){
+    // ผู้ช่วยพยาบาล (NA): เห็นเฉพาะฝั่ง NA เท่านั้น ไม่แตะข้อมูลพยาบาล
+    renderNAHome();renderNACalendar();renderNASwaps();renderNALeaves();renderNAStats();updateInfo();
+    showPanel('na-home',document.getElementById('tab-na-home'));
+    return;
+  }
   document.getElementById('monthPicker').value=currentMonth;
   document.getElementById('homeMonthPicker').value=homeMonth;
   document.getElementById('scheduleMonth').value=currentMonth;
@@ -901,6 +1052,8 @@ function initApp(){
   renderLeaves();
   renderStats();
   renderUsers();
+  // ฝั่ง NA (สำหรับ admin ที่ดูแลทั้งสองระบบ)
+  renderAssistants();renderNAScheduleResult();renderNACalendar();renderNASwaps();renderNALeaves();renderNAStats();renderNAHome();
   updateInfo();
 }
 
@@ -919,6 +1072,13 @@ function showPanel(name,btn){
   if(name==='leave')renderLeaves();
   if(name==='settings'){updateInfo();fillCloudConfigFields();}
   if(name==='users')renderUsers();
+  if(name==='na-home')renderNAHome();
+  if(name==='na-assistants')renderAssistants();
+  if(name==='na-schedule')renderNAScheduleResult();
+  if(name==='na-calendar')renderNACalendar();
+  if(name==='na-swap')renderNASwaps();
+  if(name==='na-leave')renderNALeaves();
+  if(name==='na-stats')renderNAStats();
 }
 function openModal(id){const m=document.getElementById(id);if(m)m.classList.add('show')}
 function closeModal(id){const m=document.getElementById(id);if(m)m.classList.remove('show')}
@@ -2446,6 +2606,11 @@ function openUserModal(username){
   const sorted=nurses.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   nsel.innerHTML='<option value="">— ไม่ผูก —</option>'+sorted.map(n=>'<option value="'+n.code+'">'+n.code+' - '+n.name+'</option>').join('');
   nsel.value='';
+  // เติมตัวเลือกผู้ช่วยพยาบาล (NA) สำหรับผูกบัญชี
+  const asel=document.getElementById('userAssistantCode');
+  const asorted=assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  asel.innerHTML='<option value="">— ไม่ผูก —</option>'+asorted.map(a=>'<option value="'+a.code+'">'+a.code+' - '+a.name+'</option>').join('');
+  asel.value='';
   if(username){
     const u=users.find(x=>x.username===username);
     if(u){
@@ -2455,12 +2620,21 @@ function openUserModal(username){
       document.getElementById('userFullname').value=u.fullname;
       document.getElementById('userRole').value=u.role;
       nsel.value=u.nurseCode||'';
+      asel.value=u.assistantCode||'';
       document.getElementById('userModalTitle').textContent='แก้ไขผู้ใช้';
       document.getElementById('userLineRow').style.display='';
       document.getElementById('userLineStatus').textContent=u.lineUserId?('✅ เชื่อมต่อแล้ว ('+u.lineUserId.slice(0,10)+'…)'):'ยังไม่ได้เชื่อม — ให้ผู้ใช้กด "เชื่อมบัญชี LINE" เองหลังล็อกอินด้วยรหัสผ่าน';
     }
   }
+  onUserRoleChange();
   openModal('userModal');
+}
+// สลับช่องผูกบัญชีตามบทบาท: assistant → ผูกกับ NA, อื่นๆ → ผูกกับพยาบาล
+function onUserRoleChange(){
+  const role=document.getElementById('userRole').value;
+  const isNA=role==='assistant';
+  document.getElementById('userAssistantRow').style.display=isNA?'':'none';
+  document.getElementById('userNurseRow').style.display=isNA?'none':'';
 }
 function saveUser(){
   const editUsername=document.getElementById('editUsername').value;
@@ -2469,16 +2643,17 @@ function saveUser(){
   const fullname=document.getElementById('userFullname').value.trim();
   const role=document.getElementById('userRole').value;
   const nurseCode=document.getElementById('userNurseCode').value;
+  const assistantCode=document.getElementById('userAssistantCode').value;
   if(!username||!password||!fullname){alert('กรุณากรอกข้อมูลให้ครบ');return}
   if(editUsername){
     const u=users.find(x=>x.username===editUsername);
     if(u){
-      u.username=username;u.password=password;u.fullname=fullname;u.role=role;u.nurseCode=nurseCode;
+      u.username=username;u.password=password;u.fullname=fullname;u.role=role;u.nurseCode=nurseCode;u.assistantCode=assistantCode;
       if(currentUser&&currentUser.username===editUsername){currentUser=u;save()}
     }
   }else{
     if(users.find(x=>x.username===username)){alert('❌ ชื่อผู้ใช้นี้มีอยู่แล้ว');return}
-    users.push({username,password,fullname,role,nurseCode});
+    users.push({username,password,fullname,role,nurseCode,assistantCode});
   }
   if(save()){closeModal('userModal');renderUsers();updateInfo();alert('✅ บันทึกผู้ใช้สำเร็จ')}
 }
@@ -2492,8 +2667,14 @@ function renderUsers(){
   const tbody=document.getElementById('userTable');
   if(!tbody)return;
   tbody.innerHTML=users.map(u=>{
-    const ln=u.nurseCode?nurses.find(n=>n.code===u.nurseCode):null;
-    const lnLabel=u.nurseCode?(ln?u.nurseCode+' - '+ln.name:'<span style="color:var(--danger)">'+u.nurseCode+' (ไม่พบ)</span>'):'<span style="color:var(--ink-mute)">—</span>';
+    let lnLabel;
+    if(u.role==='assistant'){
+      const a=u.assistantCode?assistants.find(x=>x.code===u.assistantCode):null;
+      lnLabel=u.assistantCode?(a?'🧑‍🔧 '+u.assistantCode+' - '+a.name:'<span style="color:var(--danger)">'+u.assistantCode+' (ไม่พบ)</span>'):'<span style="color:var(--ink-mute)">—</span>';
+    }else{
+      const ln=u.nurseCode?nurses.find(n=>n.code===u.nurseCode):null;
+      lnLabel=u.nurseCode?(ln?u.nurseCode+' - '+ln.name:'<span style="color:var(--danger)">'+u.nurseCode+' (ไม่พบ)</span>'):'<span style="color:var(--ink-mute)">—</span>';
+    }
     return `
     <tr>
       <td><strong>${u.username}</strong></td>
@@ -2652,12 +2833,17 @@ function resetAll(){
   if(save()){renderNurses();updateInfo();alert('🗑️ รีเซ็ตข้อมูลเรียบร้อย')}
 }
 function updateInfo(){
-  document.getElementById('infoNurses').textContent=nurses.length;
-  document.getElementById('infoMonths').textContent=Object.keys(schedule).length;
-  document.getElementById('infoSwaps').textContent=swaps.length;
-  const il=document.getElementById('infoLeaves');if(il)il.textContent=leaves.length;
-  document.getElementById('infoHolidays').textContent=customHolidays.length;
-  document.getElementById('infoUsers').textContent=users.length;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('infoNurses',nurses.length);
+  set('infoMonths',Object.keys(schedule).length);
+  set('infoSwaps',swaps.length);
+  set('infoLeaves',leaves.length);
+  set('infoHolidays',customHolidays.length);
+  set('infoUsers',users.length);
+  // NA
+  set('infoAssistants',assistants.length);
+  set('naSwapCount',naSwaps.length);
+  set('naLeaveCount',naLeaves.length);
 }
 
 // ============ SAMPLE DATA ============
@@ -2707,6 +2893,403 @@ function loadSampleData(){
     {id:'N42',code:'N042',name:'นส.อัญชรา อริวันนา',generation:'4',phone:'',unavailableDates:[],unavailableWeekdays:[],unavailableShifts:[],unavailableWeeks:[],unavailableMonths:[],unavailableShiftsInWeeks:[],unavailableShiftsInMonths:[],unavailableHolidays:[]}
   ];
   if(save()){renderNurses();updateInfo();alert('✅ โหลดข้อมูลตัวอย่าง 42 คนสำเร็จ (รุ่น 1: 12 คน, รุ่น 2: 8 คน, รุ่น 3: 9 คน, รุ่น 4: 12 คน)')}
+}
+
+// ============================================================
+// ============ NA (ผู้ช่วยพยาบาล) — โมดูลแยกอิสระ ============
+// ตารางเวร/แลกเวร/ลา/สถิติ ของ NA แยกจากพยาบาลโดยสิ้นเชิง (assistants / naSchedule / naSwaps / naLeaves)
+// ============================================================
+const NA_STD_SHIFTS=['morning','afternoon','night','morning_workday'];
+const NA_SHIFT_LABELS={morning:'เช้า',afternoon:'บ่าย',night:'ดึก',morning_workday:'เช้าทำการ'};
+const NA_SHIFT_BADGE={morning:'badge-morning',afternoon:'badge-afternoon',night:'badge-night',morning_workday:'badge-preop'};
+const NA_WEEKDAY_FULL=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+
+// ผูกบัญชี↔NA: ใช้ assistantCode ก่อน แล้ว fallback เทียบชื่อ (คู่ขนานกับ matchMyNurse)
+function matchMyAssistant(){
+  if(!currentUser)return null;
+  const rec=getUserRecord();
+  const code=(currentUser.assistantCode||(rec&&rec.assistantCode)||'').trim();
+  if(code){const byCode=assistants.find(a=>(a.code||'').trim()===code);if(byCode)return byCode;}
+  const fn=(currentUser.fullname||'').trim();
+  if(!fn)return null;
+  return assistants.find(a=>(a.name||'').trim()===fn)||null;
+}
+function naEmptyDay(){return {morning:[],afternoon:[],night:[],morning_workday:[]};}
+function naHasAnyShift(ds,id){if(!ds)return false;for(const k of NA_STD_SHIFTS)if((ds[k]||[]).includes(id))return true;return false;}
+function naIsOnLeave(id,dateStr,onlyApproved){
+  return naLeaves.some(l=>l.assistantId===id
+    &&(onlyApproved!==false?l.status==='approved':l.status!=='rejected')
+    &&dateStr>=l.dateFrom&&dateStr<=(l.dateTo||l.dateFrom));
+}
+function assistantUnavailable(a,dateStr,shift){
+  if(!a)return true;
+  if((a.unavailableDates||[]).includes(dateStr))return true;
+  if((a.unavailableWeekdays||[]).includes(new Date(dateStr).getDay()))return true;
+  if(shift&&(a.unavailableShifts||[]).includes(shift))return true;
+  return false;
+}
+
+// ---------- NA: จัดการรายชื่อ ----------
+let naTempUnavailDates=[];
+function renderAssistants(){
+  const tbody=document.getElementById('assistantTable');if(!tbody)return;
+  const cnt=document.getElementById('assistantCount');if(cnt)cnt.textContent=assistants.length+' คน';
+  if(assistants.length===0){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#94a3b8">ยังไม่มีข้อมูล — กด "เพิ่ม"</td></tr>';return;}
+  const WD=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  tbody.innerHTML=assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(a=>{
+    const wd=(a.unavailableWeekdays||[]).map(i=>WD[i]).join(',');
+    const sh=(a.unavailableShifts||[]).map(k=>NA_SHIFT_LABELS[k]).join(',');
+    const un=[wd?'วัน:'+wd:'',sh?'กะ:'+sh:'',(a.unavailableDates||[]).length?'วันที่:'+a.unavailableDates.length:''].filter(Boolean).join(' · ')||'-';
+    return '<tr><td><strong>'+a.code+'</strong></td><td>'+a.name+'</td><td>'+(a.phone||'-')+'</td><td style="font-size:11px;color:#64748b">'+un+'</td><td><button class="btn btn-sm btn-primary" onclick="openAssistantModal(\''+a.id+'\')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteAssistant(\''+a.id+'\')">🗑️</button></td></tr>';
+  }).join('');
+}
+function openAssistantModal(id){
+  document.getElementById('assistantId').value='';
+  document.getElementById('assistantCode').value='';
+  document.getElementById('assistantName').value='';
+  document.getElementById('assistantPhone').value='';
+  naTempUnavailDates=[];
+  document.getElementById('assistantWeekdays').innerHTML=NA_WEEKDAY_FULL.map((w,i)=>'<label style="margin-right:4px"><input type="checkbox" class="naWeekday" value="'+i+'"> '+w+'</label>').join('');
+  document.querySelectorAll('.naUnavailShift').forEach(c=>c.checked=false);
+  document.getElementById('assistantModalTitle').textContent='เพิ่มผู้ช่วยพยาบาล';
+  if(id){
+    const a=assistants.find(x=>x.id===id);
+    if(a){
+      document.getElementById('assistantId').value=a.id;
+      document.getElementById('assistantCode').value=a.code;
+      document.getElementById('assistantName').value=a.name;
+      document.getElementById('assistantPhone').value=a.phone||'';
+      naTempUnavailDates=(a.unavailableDates||[]).slice();
+      (a.unavailableWeekdays||[]).forEach(i=>{const c=document.querySelector('.naWeekday[value="'+i+'"]');if(c)c.checked=true;});
+      (a.unavailableShifts||[]).forEach(k=>{const c=document.querySelector('.naUnavailShift[value="'+k+'"]');if(c)c.checked=true;});
+      document.getElementById('assistantModalTitle').textContent='แก้ไขผู้ช่วยพยาบาล';
+    }
+  }
+  renderAssistantUnavailDates();
+  openModal('assistantModal');
+}
+function addAssistantUnavailDate(){
+  const v=document.getElementById('assistantUnavailDate').value;if(!v)return;
+  if(!naTempUnavailDates.includes(v))naTempUnavailDates.push(v);
+  naTempUnavailDates.sort();
+  document.getElementById('assistantUnavailDate').value='';
+  renderAssistantUnavailDates();
+}
+function removeAssistantUnavailDate(idx){naTempUnavailDates.splice(idx,1);renderAssistantUnavailDates();}
+function renderAssistantUnavailDates(){
+  const el=document.getElementById('assistantUnavailDateList');if(!el)return;
+  el.innerHTML=naTempUnavailDates.map((d,i)=>'<span class="tag-fix">🗓️ '+d+' <span class="remove" onclick="removeAssistantUnavailDate('+i+')">✕</span></span>').join('');
+}
+function saveAssistant(){
+  const code=document.getElementById('assistantCode').value.trim();
+  const name=document.getElementById('assistantName').value.trim();
+  const phone=document.getElementById('assistantPhone').value.trim();
+  if(!code||!name){alert('⚠️ กรุณากรอกรหัสและชื่อ');return;}
+  const weekdays=[...document.querySelectorAll('.naWeekday:checked')].map(c=>parseInt(c.value));
+  const shifts=[...document.querySelectorAll('.naUnavailShift:checked')].map(c=>c.value);
+  const id=document.getElementById('assistantId').value;
+  if(id){
+    const a=assistants.find(x=>x.id===id);
+    if(a){a.code=code;a.name=name;a.phone=phone;a.unavailableWeekdays=weekdays;a.unavailableShifts=shifts;a.unavailableDates=naTempUnavailDates.slice();}
+  }else{
+    if(assistants.some(a=>(a.code||'').trim()===code)){alert('❌ รหัสนี้มีอยู่แล้ว');return;}
+    assistants.push({id:'A'+Date.now(),code,name,phone,unavailableWeekdays:weekdays,unavailableShifts:shifts,unavailableDates:naTempUnavailDates.slice()});
+  }
+  if(save()){closeModal('assistantModal');renderAssistants();renderNAHome();updateInfo();alert('✅ บันทึกสำเร็จ');}
+}
+function deleteAssistant(id){
+  if(!confirm('ลบผู้ช่วยพยาบาลคนนี้?'))return;
+  assistants=assistants.filter(a=>a.id!==id);
+  if(save()){renderAssistants();updateInfo();alert('✅ ลบสำเร็จ');}
+}
+
+// ---------- NA: จัดเวรอัตโนมัติ ----------
+function getNAHeadcounts(){
+  const g=(id,def)=>{const el=document.getElementById(id);const v=el?parseInt(el.value):NaN;return isNaN(v)||v<0?def:v;};
+  return {morning:g('naCntMorning',2),afternoon:g('naCntAfternoon',2),night:g('naCntNight',2),morning_workday:g('naCntWorkday',1)};
+}
+function autoScheduleNA(){
+  const month=document.getElementById('naScheduleMonth').value||naMonth;naMonth=month;
+  if(assistants.length===0){alert('⚠️ กรุณาเพิ่มรายชื่อผู้ช่วยพยาบาลก่อน');return;}
+  const cnt=getNAHeadcounts();
+  const[y,m]=month.split('-').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  const monthSched={};
+  const load={};assistants.forEach(a=>load[a.id]=0);
+  let prevAfternoon=new Set();
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=month+'-'+String(d).padStart(2,'0');
+    const off=isOffDay(dateStr);
+    const day=naEmptyDay();
+    const assignedToday=new Set();
+    const todayAfternoon=new Set();
+    const shiftsToFill=off?['morning','afternoon','night']:['morning_workday','afternoon','night'];
+    shiftsToFill.forEach(shift=>{
+      const shiftForUnavail=(shift==='morning_workday')?'morning':shift;
+      for(let k=0;k<cnt[shift];k++){
+        const pool=assistants.filter(a=>!assignedToday.has(a.id)
+          &&!naIsOnLeave(a.id,dateStr)
+          &&!assistantUnavailable(a,dateStr,shiftForUnavail)
+          &&!(shift==='night'&&prevAfternoon.has(a.id)));
+        if(pool.length===0)break;
+        // สุ่มสลับก่อน แล้วค่อยเรียงตามจำนวนเวรน้อยสุด (stable sort) — กันคนโค้ดต้น/ท้ายโดนกองงานซ้ำ ๆ ให้เฉลี่ยเท่ากันจริง
+        for(let x=pool.length-1;x>0;x--){const j=Math.floor(Math.random()*(x+1));const t=pool[x];pool[x]=pool[j];pool[j]=t;}
+        pool.sort((a,b)=>load[a.id]-load[b.id]);
+        const pick=pool[0];
+        day[shift].push(pick.id);assignedToday.add(pick.id);load[pick.id]++;
+        if(shift==='afternoon')todayAfternoon.add(pick.id);
+      }
+    });
+    monthSched[d]=day;
+    prevAfternoon=todayAfternoon;
+  }
+  naSchedule[month]=monthSched;
+  if(save()){renderNAScheduleResult();renderNACalendar();renderNAStats();renderNAHome();alert('✅ จัดเวร NA เดือน'+MONTH_TH[m-1]+' '+(y+543)+' สำเร็จ');}
+}
+function clearNASchedule(){
+  const month=document.getElementById('naScheduleMonth').value||naMonth;
+  if(!confirm('ล้างเวร NA เดือนนี้?'))return;
+  delete naSchedule[month];
+  if(save()){renderNAScheduleResult();renderNACalendar();renderNAStats();renderNAHome();alert('🗑️ ล้างเวร NA แล้ว');}
+}
+function renderNAScheduleResult(){
+  const el=document.getElementById('naScheduleResult');if(!el)return;
+  const month=document.getElementById('naScheduleMonth')?document.getElementById('naScheduleMonth').value:naMonth;
+  const ms=naSchedule[month];
+  if(!ms){el.innerHTML='<div class="alert alert-info">ยังไม่ได้จัดเวรเดือนนี้ — กด "จัดเวรอัตโนมัติ"</div>';return;}
+  const load={};assistants.forEach(a=>load[a.id]=0);
+  Object.values(ms).forEach(ds=>NA_STD_SHIFTS.forEach(k=>(ds[k]||[]).forEach(id=>{if(load[id]!=null)load[id]++;})));
+  el.innerHTML='<div class="alert alert-success">✅ จัดเวรแล้ว — เฉลี่ยเวรต่อคนในเดือนนี้</div><div class="stats-grid">'+
+    assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(a=>'<div class="stat-card"><div class="name">'+a.name+'</div><div class="total">'+load[a.id]+' กะ</div></div>').join('')+'</div>';
+}
+
+// ---------- NA: ปฏิทิน ----------
+function changeNAMonth(delta){
+  const[y,m]=naMonth.split('-').map(Number);
+  naMonth=new Date(y,m-1+delta,1).toISOString().slice(0,7);
+  const mp=document.getElementById('naCalMonth');if(mp)mp.value=naMonth;
+  renderNACalendar();
+}
+function renderNACalendar(){
+  const mp=document.getElementById('naCalMonth');if(!mp)return;
+  if(!mp.value)mp.value=naMonth;naMonth=mp.value;
+  const[y,m]=naMonth.split('-').map(Number);
+  document.getElementById('naCalTitle').textContent=MONTH_TH[m-1]+' '+(y+543);
+  const startDow=new Date(y,m-1,1).getDay();
+  const daysInMonth=new Date(y,m,0).getDate();
+  const ms=naSchedule[naMonth]||{};
+  const getName=id=>{const a=assistants.find(x=>x.id===id);return a?a.name.split(' ')[0]:'?';};
+  const fmt=arr=>(arr||[]).map(getName).join(', ')||'-';
+  let html='';
+  WEEKDAY_TH.forEach((w,i)=>{html+='<div class="cal-header '+(i===0?'sun':'')+'">'+w+'</div>';});
+  for(let i=0;i<startDow;i++)html+='<div class="cal-day empty"></div>';
+  const today=formatDate(new Date());
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=naMonth+'-'+String(d).padStart(2,'0');
+    const ds=ms[d];const we=isWeekend(dateStr),hol=isHoliday(dateStr);
+    let cls='cal-day';if(we)cls+=' weekend';if(hol)cls+=' holiday';if(dateStr===today)cls+=' today';
+    let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
+    if(ds){
+      if((ds.morning||[]).length)content+='<div class="shift-info"><span class="shift-label">เช้า:</span> <span class="nurse-name">'+fmt(ds.morning)+'</span></div>';
+      if((ds.morning_workday||[]).length)content+='<div class="shift-info"><span class="shift-label">เช้าทำการ:</span> <span class="nurse-name">'+fmt(ds.morning_workday)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">บ่าย:</span> <span class="nurse-name">'+fmt(ds.afternoon)+'</span></div>';
+      content+='<div class="shift-info"><span class="shift-label">ดึก:</span> <span class="nurse-name">'+fmt(ds.night)+'</span></div>';
+    }else{content+='<div style="color:#94a3b8;font-size:9px;margin-top:3px">ยังไม่ได้จัดเวร</div>';}
+    html+='<div class="'+cls+'">'+content+'</div>';
+  }
+  document.getElementById('naCalendar').innerHTML=html;
+}
+
+// ---------- NA: หน้าแรก "เวรฉัน" ----------
+function changeNAHomeMonth(delta){
+  const[y,m]=naHomeMonth.split('-').map(Number);
+  naHomeMonth=new Date(y,m-1+delta,1).toISOString().slice(0,7);
+  const mp=document.getElementById('naHomeMonth');if(mp)mp.value=naHomeMonth;
+  renderNAHome();
+}
+function populateNAHomePerson(){
+  const sel=document.getElementById('naHomePerson');if(!sel)return;
+  const prev=sel.value;const mine=matchMyAssistant();
+  let html='<option value="__mine__">👤 เวรของฉัน'+(mine?' — '+mine.name:'')+'</option>';
+  if(!currentUser||currentUser.role!=='assistant'){
+    html+=assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(a=>'<option value="'+a.id+'">'+a.code+' - '+a.name+'</option>').join('');
+  }
+  sel.innerHTML=html;
+  if(prev)sel.value=prev;
+}
+function renderNAHome(){
+  const mp=document.getElementById('naHomeMonth');if(!mp)return;
+  if(!mp.value)mp.value=naHomeMonth;naHomeMonth=mp.value;
+  const[y,m]=naHomeMonth.split('-').map(Number);
+  document.getElementById('naHomeTitle').textContent=MONTH_TH[m-1]+' '+(y+543);
+  populateNAHomePerson();
+  const val=document.getElementById('naHomePerson').value;
+  const a=val==='__mine__'?matchMyAssistant():assistants.find(x=>x.id===val)||null;
+  const summary=document.getElementById('naHomeSummary');
+  if(!a){summary.innerHTML='<div class="alert alert-warn">⚠️ ไม่พบข้อมูล NA ที่ตรงกับบัญชีของคุณ'+(currentUser?' ('+currentUser.fullname+')':'')+'<br>กรุณาให้แอดมินผูกรหัส NA กับบัญชีของคุณ</div>';document.getElementById('naHomeCalendar').innerHTML='';return;}
+  const startDow=new Date(y,m-1,1).getDay();
+  const daysInMonth=new Date(y,m,0).getDate();
+  const ms=naSchedule[naHomeMonth]||{};
+  const counts={morning:0,afternoon:0,night:0,morning_workday:0};let leaveDays=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=naHomeMonth+'-'+String(d).padStart(2,'0');const ds=ms[d];
+    if(ds)NA_STD_SHIFTS.forEach(k=>{if((ds[k]||[]).includes(a.id))counts[k]++;});
+    if(naIsOnLeave(a.id,dateStr))leaveDays++;
+  }
+  const total=counts.morning+counts.afternoon+counts.night+counts.morning_workday;
+  summary.innerHTML='<div class="home-hero"><div class="avatar" style="background:#16a34a">'+(a.name?a.name.trim().charAt(0):'👤')+'</div><div class="who"><div class="nm">'+a.name+' <span class="badge badge-role-assistant">NA</span></div><div class="sub">รหัส '+a.code+(a.phone?' · 📞 '+a.phone:'')+'</div></div></div>'
+    +'<div class="duty-summary"><div class="duty-stat"><div class="num">'+total+'</div><div class="lbl">รวมทั้งเดือน</div></div>'
+    +'<div class="duty-stat morning"><div class="num">'+(counts.morning+counts.morning_workday)+'</div><div class="lbl">🌅 เช้า</div></div>'
+    +'<div class="duty-stat afternoon"><div class="num">'+counts.afternoon+'</div><div class="lbl">☀️ บ่าย</div></div>'
+    +'<div class="duty-stat night"><div class="num">'+counts.night+'</div><div class="lbl">🌙 ดึก</div></div>'
+    +(leaveDays?'<div class="duty-stat"><div class="num">'+leaveDays+'</div><div class="lbl">🌴 วันลา</div></div>':'')+'</div>';
+  if(total===0)summary.innerHTML+='<div class="alert alert-info">💡 ยังไม่มีเวรของ '+a.name.split(' ')[0]+' ในเดือนนี้</div>';
+  let html='';
+  WEEKDAY_TH.forEach((w,i)=>{html+='<div class="cal-header '+(i===0?'sun':'')+'">'+w+'</div>';});
+  for(let i=0;i<startDow;i++)html+='<div class="cal-day empty"></div>';
+  const today=formatDate(new Date());
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=naHomeMonth+'-'+String(d).padStart(2,'0');const ds=ms[d];
+    const we=isWeekend(dateStr),hol=isHoliday(dateStr);
+    const myShifts=ds?NA_STD_SHIFTS.filter(k=>(ds[k]||[]).includes(a.id)):[];
+    const lv=naLeaves.find(l=>l.assistantId===a.id&&l.status==='approved'&&dateStr>=l.dateFrom&&dateStr<=(l.dateTo||l.dateFrom));
+    let cls='cal-day';if(we)cls+=' weekend';if(hol)cls+=' holiday';
+    if(lv)cls+=' on-leave';else if(myShifts.length)cls+=' has-duty';else if(!we&&!hol)cls+=' office-day';
+    if(dateStr===today)cls+=' today';
+    let content='<div class="date-num">'+d+(hol?' 🎌':'')+'</div>';
+    let chips='';
+    if(lv)chips+='<span class="duty-chip leave">'+LEAVE_TYPE_EMOJI[lv.type]+' '+(LEAVE_TYPES[lv.type]||'ลา')+'</span>';
+    if(myShifts.length)chips+=myShifts.map(k=>'<span class="duty-chip badge '+NA_SHIFT_BADGE[k]+'">'+NA_SHIFT_LABELS[k]+'</span>').join('');
+    content+=chips?'<div>'+chips+'</div>':'<div class="duty-none">หยุด</div>';
+    html+='<div class="'+cls+'">'+content+'</div>';
+  }
+  document.getElementById('naHomeCalendar').innerHTML=html;
+}
+
+// ---------- NA: สถิติ ----------
+function renderNAStats(){
+  const grid=document.getElementById('naStatsGrid');if(!grid)return;
+  const mpEl=document.getElementById('naStatsMonth');
+  const month=(mpEl&&mpEl.value)||naMonth;if(mpEl)mpEl.value=month;
+  const ms=naSchedule[month]||{};
+  const[sy,sm]=month.split('-').map(Number);const daysInMonth=new Date(sy,sm,0).getDate();
+  const stats={};assistants.forEach(a=>stats[a.id]={morning:0,afternoon:0,night:0,morning_workday:0,total:0,daysWorked:0,restDays:0,workedOnOff:0,offTotal:0});
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=month+'-'+String(d).padStart(2,'0');const ds=ms[d];const off=isOffDay(dateStr);
+    if(off)assistants.forEach(a=>stats[a.id].offTotal++);
+    const worked=new Set();
+    if(ds)NA_STD_SHIFTS.forEach(k=>(ds[k]||[]).forEach(id=>{if(stats[id]){stats[id][k]++;stats[id].total++;worked.add(id);}}));
+    assistants.forEach(a=>{const w=worked.has(a.id);if(w)stats[a.id].daysWorked++;if(off){if(w)stats[a.id].workedOnOff++;else stats[a.id].restDays++;}});
+  }
+  if(assistants.length===0){grid.innerHTML='<div class="alert alert-info">ยังไม่มีข้อมูลผู้ช่วยพยาบาล</div>';return;}
+  grid.innerHTML=assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(a=>{const s=stats[a.id];
+    return '<div class="stat-card"><div class="name">'+a.name+' <span class="badge badge-role-assistant">NA</span></div><div class="total">'+s.total+' กะ</div><div class="details">🌅 เช้า: '+(s.morning+s.morning_workday)+' | ☀️ บ่าย: '+s.afternoon+'<br>🌙 ดึก: '+s.night+'</div><div class="details" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)">📅 วันเข้าเวร: <strong>'+s.daysWorked+'</strong> | 🛌 วันหยุดพัก: <strong>'+s.restDays+'</strong><br>🎌 เข้าเวรวันหยุด: '+s.workedOnOff+' / '+s.offTotal+'</div></div>';
+  }).join('');
+}
+
+// ---------- NA: แลกเวร ----------
+function renderNASwapActions(){const div=document.getElementById('naSwapActions');if(!div)return;div.innerHTML='<button class="btn btn-primary" onclick="openNASwapModal()">➕ ขอแลก/ยกเวร</button>';}
+function onNASwapTypeChange(){const t=document.querySelector('input[name="naSwapType"]:checked').value;document.getElementById('naSwapDate2Row').style.display=(t==='giveaway')?'none':'';}
+function openNASwapModal(){
+  if(assistants.length<2){alert('ต้องมีผู้ช่วยพยาบาลอย่างน้อย 2 คน');return;}
+  const role=currentUser?currentUser.role:'assistant';let lock=null;
+  if(role==='assistant'){lock=matchMyAssistant();if(!lock){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับ NA กรุณาให้แอดมินผูกรหัสก่อน');return;}}
+  const opts=assistants.map(a=>'<option value="'+a.id+'">'+a.code+' - '+a.name+'</option>').join('');
+  const sf=document.getElementById('naSwapFrom');sf.innerHTML=opts;document.getElementById('naSwapTo').innerHTML=opts;
+  if(lock){sf.value=lock.id;sf.disabled=true;}else{sf.disabled=false;}
+  document.querySelector('input[name="naSwapType"][value="swap"]').checked=true;onNASwapTypeChange();
+  document.getElementById('naSwapDate').value='';document.getElementById('naSwapDate2').value='';document.getElementById('naSwapReason').value='';
+  openModal('naSwapModal');
+}
+function saveNASwap(){
+  const type=document.querySelector('input[name="naSwapType"]:checked').value;
+  const role=currentUser?currentUser.role:'assistant';
+  let from=document.getElementById('naSwapFrom').value;
+  if(role==='assistant'){const mine=matchMyAssistant();if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับ NA');return;}from=mine.id;}
+  const to=document.getElementById('naSwapTo').value;
+  const date=document.getElementById('naSwapDate').value;
+  const shift=document.getElementById('naSwapShift').value;
+  const date2=document.getElementById('naSwapDate2').value;
+  const reason=document.getElementById('naSwapReason').value;
+  if(!from||!to||!date){alert('กรุณากรอกข้อมูลให้ครบ');return;}
+  if(from===to){alert('ผู้ขอและผู้รับต้องเป็นคนละคน');return;}
+  naSwaps.push({id:'NS'+Date.now(),type,from,to,date,date2:type==='giveaway'?date:(date2||date),shift,reason,status:'pending',requestedBy:currentUser?currentUser.username:'unknown',createdAt:new Date().toISOString()});
+  if(save()){closeModal('naSwapModal');renderNASwaps();updateInfo();alert(type==='giveaway'?'✅ ส่งคำขอยกเวรแล้ว':'✅ ส่งคำขอแลกเวรแล้ว');}
+}
+function updateNASwapStatus(id,status){
+  const s=naSwaps.find(x=>x.id===id);if(!s)return;
+  if(status==='approved'){
+    const[y1,m1,d1]=s.date.split('-').map(Number);const month1=y1+'-'+String(m1).padStart(2,'0');
+    if(naSchedule[month1]&&naSchedule[month1][d1]&&naSchedule[month1][d1][s.shift]){
+      const arr=naSchedule[month1][d1][s.shift];const idx=arr.indexOf(s.from);if(idx>=0)arr[idx]=s.to;
+    }
+    if(s.type!=='giveaway'&&s.date2!==s.date){
+      const[y2,m2,d2]=s.date2.split('-').map(Number);const month2=y2+'-'+String(m2).padStart(2,'0');
+      if(naSchedule[month2]&&naSchedule[month2][d2]&&naSchedule[month2][d2][s.shift]){
+        const arr=naSchedule[month2][d2][s.shift];const idx=arr.indexOf(s.to);if(idx>=0)arr[idx]=s.from;
+      }
+    }
+    s.approvedBy=currentUser?currentUser.username:'unknown';
+  }
+  s.status=status;
+  if(save()){renderNASwaps();renderNACalendar();renderNAHome();renderNAStats();updateInfo();}
+}
+function deleteNASwap(id){if(!confirm('ลบคำขอนี้?'))return;naSwaps=naSwaps.filter(s=>s.id!==id);if(save()){renderNASwaps();updateInfo();}}
+function renderNASwaps(){
+  renderNASwapActions();
+  const list=document.getElementById('naSwapList');if(!list)return;
+  if(naSwaps.length===0){list.innerHTML='<div class="alert alert-info">ยังไม่มีคำขอแลกเวร</div>';return;}
+  const role=currentUser?currentUser.role:'assistant';const canApprove=role==='admin'||role==='approver';
+  list.innerHTML=naSwaps.slice().reverse().map(s=>{
+    const from=assistants.find(a=>a.id===s.from),to=assistants.find(a=>a.id===s.to);
+    const statusLabel={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ปฏิเสธ'}[s.status];
+    const give=s.type==='giveaway';
+    const typeLabel=give?'<span class="badge" style="background:#e8e2ff;color:#4c2fb0">➡️ ยกเวร</span>':'<span class="badge" style="background:#dbeafe;color:#1e40af">🔄 แลกเวร</span>';
+    const reqUser=users.find(u=>u.username===s.requestedBy);const reqName=reqUser?reqUser.fullname:(s.requestedBy||'-');
+    return '<div class="swap-card '+s.status+'"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div>'+typeLabel+' <strong>'+(from?from.name:'?')+'</strong> '+(give?'➡️':'⇄')+' <strong>'+(to?to.name:'?')+'</strong></div><div style="font-size:11px;color:#64748b;margin-top:3px">📅 '+s.date+' | ⏰ '+(NA_SHIFT_LABELS[s.shift]||s.shift)+(!give&&s.date2!==s.date?' → รับแทนวันที่ '+s.date2:'')+'</div>'+(s.reason?'<div style="font-size:11px;margin-top:3px">💬 '+s.reason+'</div>':'')+'<div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: '+reqName+'</div><div style="margin-top:5px"><span class="badge" style="background:#f1f5f9">'+statusLabel+'</span></div></div><div style="display:flex;flex-direction:column;gap:4px">'+(s.status==='pending'&&canApprove?'<button class="btn btn-sm btn-success" onclick="updateNASwapStatus(\''+s.id+'\',\'approved\')">✅ อนุมัติ</button><button class="btn btn-sm btn-danger" onclick="updateNASwapStatus(\''+s.id+'\',\'rejected\')">❌ ปฏิเสธ</button>':'')+(role==='admin'?'<button class="btn btn-sm btn-secondary" onclick="deleteNASwap(\''+s.id+'\')">🗑️</button>':'')+'</div></div></div>';
+  }).join('');
+}
+
+// ---------- NA: วันลา ----------
+function renderNALeaveActions(){const div=document.getElementById('naLeaveActions');if(!div)return;div.innerHTML='<button class="btn btn-primary" onclick="openNALeaveModal()">➕ ขอลา</button>';}
+function openNALeaveModal(){
+  if(assistants.length===0){alert('กรุณาเพิ่มข้อมูล NA ก่อน');return;}
+  const role=currentUser?currentUser.role:'assistant';
+  const sel=document.getElementById('naLeaveAssistant');
+  sel.innerHTML=assistants.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(a=>'<option value="'+a.id+'">'+a.code+' - '+a.name+'</option>').join('');
+  if(role==='assistant'){const mine=matchMyAssistant();if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับ NA');return;}sel.value=mine.id;sel.disabled=true;}else{sel.disabled=false;}
+  document.getElementById('naLeaveType').value='personal';
+  document.getElementById('naLeaveFrom').value='';document.getElementById('naLeaveTo').value='';document.getElementById('naLeaveReason').value='';
+  openModal('naLeaveModal');
+}
+function saveNALeave(){
+  const role=currentUser?currentUser.role:'assistant';
+  let assistantId=document.getElementById('naLeaveAssistant').value;
+  if(role==='assistant'){const mine=matchMyAssistant();if(!mine){alert('⚠️ บัญชีของคุณยังไม่ได้ผูกกับ NA');return;}assistantId=mine.id;}
+  const type=document.getElementById('naLeaveType').value;
+  const dateFrom=document.getElementById('naLeaveFrom').value;
+  const dateTo=document.getElementById('naLeaveTo').value||dateFrom;
+  const reason=document.getElementById('naLeaveReason').value;
+  if(!assistantId||!dateFrom){alert('กรุณาเลือก NA และวันที่');return;}
+  if(dateTo<dateFrom){alert('วันที่สิ้นสุดต้องไม่ก่อนวันเริ่ม');return;}
+  naLeaves.push({id:'NL'+Date.now(),assistantId,type,dateFrom,dateTo,reason,status:'pending',requestedBy:currentUser?currentUser.username:'unknown',createdAt:new Date().toISOString()});
+  if(save()){closeModal('naLeaveModal');renderNALeaves();updateInfo();alert('✅ ส่งคำขอลาแล้ว');}
+}
+function updateNALeaveStatus(id,status){const l=naLeaves.find(x=>x.id===id);if(!l)return;if(status==='approved')l.approvedBy=currentUser?currentUser.username:'unknown';l.status=status;if(save()){renderNALeaves();renderNAHome();renderNACalendar();updateInfo();}}
+function deleteNALeave(id){if(!confirm('ลบคำขอลานี้?'))return;naLeaves=naLeaves.filter(l=>l.id!==id);if(save()){renderNALeaves();updateInfo();}}
+function renderNALeaves(){
+  renderNALeaveActions();
+  const list=document.getElementById('naLeaveList');if(!list)return;
+  if(naLeaves.length===0){list.innerHTML='<div class="alert alert-info">ยังไม่มีคำขอลา</div>';return;}
+  const role=currentUser?currentUser.role:'assistant';const canApprove=role==='admin'||role==='approver';
+  list.innerHTML=naLeaves.slice().reverse().map(l=>{
+    const a=assistants.find(x=>x.id===l.assistantId);
+    const statusLabel={pending:'⏳ รออนุมัติ',approved:'✅ อนุมัติแล้ว',rejected:'❌ ปฏิเสธ'}[l.status];
+    const reqUser=users.find(u=>u.username===l.requestedBy);const reqName=reqUser?reqUser.fullname:(l.requestedBy||'-');
+    const dateTxt=l.dateFrom+(l.dateTo&&l.dateTo!==l.dateFrom?' → '+l.dateTo:'');
+    const cardCls=l.status==='approved'?'approved':(l.status==='rejected'?'rejected':'');
+    return '<div class="swap-card '+cardCls+'"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div><span class="badge" style="background:#fde8cf;color:#9a5b00">'+(LEAVE_TYPE_EMOJI[l.type]||'')+' '+(LEAVE_TYPES[l.type]||l.type)+'</span> <strong>'+(a?a.name:'?')+'</strong></div><div style="font-size:11px;color:#64748b;margin-top:3px">📅 '+dateTxt+'</div>'+(l.reason?'<div style="font-size:11px;margin-top:3px">💬 '+l.reason+'</div>':'')+'<div style="font-size:10px;color:#94a3b8;margin-top:3px">ผู้ขอ: '+reqName+'</div><div style="margin-top:5px"><span class="badge" style="background:#f1f5f9">'+statusLabel+'</span></div></div><div style="display:flex;flex-direction:column;gap:4px">'+(l.status==='pending'&&canApprove?'<button class="btn btn-sm btn-success" onclick="updateNALeaveStatus(\''+l.id+'\',\'approved\')">✅ อนุมัติ</button><button class="btn btn-sm btn-danger" onclick="updateNALeaveStatus(\''+l.id+'\',\'rejected\')">❌ ปฏิเสธ</button>':'')+(role==='admin'?'<button class="btn btn-sm btn-secondary" onclick="deleteNALeave(\''+l.id+'\')">🗑️</button>':'')+'</div></div></div>';
+  }).join('');
 }
 
 // ============ INIT ============

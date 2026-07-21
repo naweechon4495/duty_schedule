@@ -38,7 +38,12 @@ var SHEETS = {
   swaps: 'Swaps',
   customHolidays: 'Holidays',
   users: 'Users',
-  leaves: 'Leaves'
+  leaves: 'Leaves',
+  // ===== NA (ผู้ช่วยพยาบาล) — ตารางแยกจากพยาบาล =====
+  assistants: 'Assistants',
+  naSchedule: 'NASchedule',
+  naSwaps: 'NASwaps',
+  naLeaves: 'NALeaves'
 };
 
 var HEADERS = {
@@ -46,8 +51,12 @@ var HEADERS = {
   schedule: ['month','day','shift','nurseId'],
   swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
   customHolidays: ['date','name'],
-  users: ['username','password','fullname','role','lineUserId','nurseCode'],
-  leaves: ['id','nurseId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt']
+  users: ['username','password','fullname','role','lineUserId','nurseCode','assistantCode'],
+  leaves: ['id','nurseId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt'],
+  assistants: ['id','code','name','phone','unavailableDates','unavailableWeekdays','unavailableShifts'],
+  naSchedule: ['month','day','shift','assistantId'],
+  naSwaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
+  naLeaves: ['id','assistantId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt']
 };
 
 function doGet(e) {
@@ -61,7 +70,11 @@ function doGet(e) {
     swaps: readSwaps(getOrCreateSheet(ss, SHEETS.swaps, HEADERS.swaps)),
     customHolidays: readHolidays(getOrCreateSheet(ss, SHEETS.customHolidays, HEADERS.customHolidays)),
     users: readUsers(getOrCreateSheet(ss, SHEETS.users, HEADERS.users)),
-    leaves: readLeaves(getOrCreateSheet(ss, SHEETS.leaves, HEADERS.leaves))
+    leaves: readLeaves(getOrCreateSheet(ss, SHEETS.leaves, HEADERS.leaves)),
+    assistants: readAssistants(getOrCreateSheet(ss, SHEETS.assistants, HEADERS.assistants)),
+    naSchedule: readSchedule2(getOrCreateSheet(ss, SHEETS.naSchedule, HEADERS.naSchedule)),
+    naSwaps: readSwaps(getOrCreateSheet(ss, SHEETS.naSwaps, HEADERS.naSwaps)),
+    naLeaves: readNALeaves(getOrCreateSheet(ss, SHEETS.naLeaves, HEADERS.naLeaves))
   });
 }
 
@@ -85,6 +98,10 @@ function doPost(e) {
   if (data.customHolidays) writeHolidays(getOrCreateSheet(ss, SHEETS.customHolidays, HEADERS.customHolidays), data.customHolidays);
   if (data.users) writeUsers(getOrCreateSheet(ss, SHEETS.users, HEADERS.users), data.users);
   if (data.leaves) writeLeaves(getOrCreateSheet(ss, SHEETS.leaves, HEADERS.leaves), data.leaves);
+  if (data.assistants) writeAssistants(getOrCreateSheet(ss, SHEETS.assistants, HEADERS.assistants), data.assistants);
+  if (data.naSchedule) writeSchedule2(getOrCreateSheet(ss, SHEETS.naSchedule, HEADERS.naSchedule), data.naSchedule);
+  if (data.naSwaps) writeSwaps(getOrCreateSheet(ss, SHEETS.naSwaps, HEADERS.naSwaps), data.naSwaps);
+  if (data.naLeaves) writeNALeaves(getOrCreateSheet(ss, SHEETS.naLeaves, HEADERS.naLeaves), data.naLeaves);
   return jsonOutput({ ok: true, savedAt: new Date().toISOString() });
 }
 
@@ -251,6 +268,7 @@ function readUsers(sheet) {
     var user = { username: String(r[0]), password: String(r[1]), fullname: String(r[2]), role: String(r[3]) };
     if (r[4]) user.lineUserId = String(r[4]);
     if (r[5]) user.nurseCode = String(r[5]);
+    if (r[6]) user.assistantCode = String(r[6]);
     users.push(user);
   }
   return users;
@@ -259,7 +277,7 @@ function readUsers(sheet) {
 function writeUsers(sheet, users) {
   var rows = [HEADERS.users];
   users.forEach(function (u) {
-    rows.push([u.username, u.password, u.fullname, u.role, u.lineUserId || '', u.nurseCode || '']);
+    rows.push([u.username, u.password, u.fullname, u.role, u.lineUserId || '', u.nurseCode || '', u.assistantCode || '']);
   });
   overwriteSheet(sheet, rows);
 }
@@ -286,6 +304,95 @@ function writeLeaves(sheet, leaves) {
   var rows = [HEADERS.leaves];
   leaves.forEach(function (l) {
     rows.push([l.id, l.nurseId, l.type, l.dateFrom, l.dateTo || l.dateFrom, l.reason || '', l.status || 'pending', l.requestedBy || '', l.approvedBy || '', l.createdAt || '']);
+  });
+  overwriteSheet(sheet, rows);
+}
+
+// ==================================================================
+// ===== NA (ผู้ช่วยพยาบาล) — read/write ตารางแยกของ NA =====
+// ==================================================================
+
+// ---------- Assistants (รายชื่อ NA) ----------
+function readAssistants(sheet) {
+  var rows = sheet.getDataRange().getValues();
+  var out = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0]) continue;
+    out.push({
+      id: String(r[0]), code: String(r[1]), name: String(r[2]), phone: String(r[3] || ''),
+      unavailableDates: parseJsonSafe(r[4], []),
+      unavailableWeekdays: parseJsonSafe(r[5], []),
+      unavailableShifts: parseJsonSafe(r[6], [])
+    });
+  }
+  return out;
+}
+
+function writeAssistants(sheet, list) {
+  var rows = [HEADERS.assistants];
+  list.forEach(function (a) {
+    rows.push([
+      a.id, a.code, a.name, a.phone || '',
+      JSON.stringify(a.unavailableDates || []),
+      JSON.stringify(a.unavailableWeekdays || []),
+      JSON.stringify(a.unavailableShifts || [])
+    ]);
+  });
+  overwriteSheet(sheet, rows);
+}
+
+// ---------- NASchedule (long format: 1 แถว = 1 เวร 1 คน) — คีย์ assistantId ----------
+function readSchedule2(sheet) {
+  var rows = sheet.getDataRange().getValues();
+  var schedule = {};
+  for (var i = 1; i < rows.length; i++) {
+    var month = rows[i][0], day = rows[i][1], shift = rows[i][2], id = rows[i][3];
+    if (!month) continue;
+    if (!schedule[month]) schedule[month] = {};
+    if (!schedule[month][day]) schedule[month][day] = { morning: [], afternoon: [], night: [], morning_workday: [] };
+    if (!schedule[month][day][shift]) schedule[month][day][shift] = [];
+    schedule[month][day][shift].push(String(id));
+  }
+  return schedule;
+}
+
+function writeSchedule2(sheet, schedule) {
+  var rows = [HEADERS.naSchedule];
+  Object.keys(schedule).forEach(function (month) {
+    Object.keys(schedule[month]).forEach(function (day) {
+      var daySched = schedule[month][day];
+      Object.keys(daySched).forEach(function (shift) {
+        (daySched[shift] || []).forEach(function (id) {
+          rows.push([month, day, shift, id]);
+        });
+      });
+    });
+  });
+  overwriteSheet(sheet, rows);
+}
+
+// ---------- NALeaves (วันลา NA) — คีย์ assistantId ----------
+function readNALeaves(sheet) {
+  var rows = sheet.getDataRange().getValues();
+  var leaves = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0]) continue;
+    leaves.push({
+      id: String(r[0]), assistantId: String(r[1]), type: String(r[2]),
+      dateFrom: String(r[3]), dateTo: String(r[4] || r[3]), reason: String(r[5] || ''),
+      status: String(r[6] || 'pending'), requestedBy: String(r[7] || ''),
+      approvedBy: String(r[8] || ''), createdAt: String(r[9] || '')
+    });
+  }
+  return leaves;
+}
+
+function writeNALeaves(sheet, leaves) {
+  var rows = [HEADERS.naLeaves];
+  leaves.forEach(function (l) {
+    rows.push([l.id, l.assistantId, l.type, l.dateFrom, l.dateTo || l.dateFrom, l.reason || '', l.status || 'pending', l.requestedBy || '', l.approvedBy || '', l.createdAt || '']);
   });
   overwriteSheet(sheet, rows);
 }
