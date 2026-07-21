@@ -1,0 +1,24 @@
+      <div class="card">
+        <h2>⚙️ จัดเวรอัตโนมัติ</h2>
+        <div class="alert alert-info">
+          📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
+          • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (เช้า1 + เช้า2 = 6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
+          • แต่ละทีม 3 คนคนละรุ่น (ไม่ซ้ำรุ่น) • เฉลี่ยเช้า1/เช้า2/บ่าย1/บ่าย2 เท่า ๆ กัน • รุ่น 4 = Pre-op • <strong>รุ่น Staff</strong> ได้เวรเช้าวันหยุด <strong>3 เวร/เดือน</strong> (สิทธิ์ก่อน แล้วเวรเช้าที่เหลือเฉลี่ยให้รุ่น 1-3)<br>
+          • <strong>ต่อเนื่อง:</strong> บ่าย→ไม่จัดดึกวันถัดไป • เมื่อวานหยุด(ไม่มีเวร)→วันนี้ไม่จัดดึก • บ่ายห้ามติดกัน 3 วัน (ทั้งวันธรรมดา/วันหยุด) • วันธรรมดา: ดึกกับบ่ายไม่ใช่คนเดียวกันในวันเดียว &amp; บ่ายไม่ติดกัน 2 วัน • วันหยุด: 1 คน 1 เวร/วัน <em>(เงื่อนไขบ่าย/ดึกเป็นแบบผ่อนปรนได้ถ้าคนไม่พอ)</em>
+        </div>
+        <div class="toolbar">
+          <label>เดือน:</label>
+          <input type="month" id="scheduleMonth">
+          <button class="btn btn-success" onclick="autoSchedule()">🤖 จัดเวรอัตโนมัติ</button>
+          <button class="btn btn-danger" onclick="clearSchedule()">🗑️ ล้างเวร</button>
+        </div>
+        <div id="scheduleResult"></div>
+      </div>
+      <div class="card">
+        <h2>➕ เพิ่มเวรกำหนดเอง</h2>
+        <div class="alert alert-info">💡 สร้างเวรพิเศษ (เช่น ประชุม/อบรม) กำหนดชื่อ กะเวลา ช่วงวันที่ และสุ่มคนที่ยังไม่มีเวรในวันนั้น</div>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openCustomShiftModal()">➕ เพิ่มเวร</button>
+        </div>
+      </div>

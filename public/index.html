@@ -254,244 +254,16 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 
   <div class="container">
 
-    <div id="panel-home" class="panel active">
-      <div class="card">
-        <h2>🏠 ตารางเวรของฉัน</h2>
-        <div class="toolbar">
-          <button class="btn btn-secondary" onclick="changeHomeMonth(-1)">◀</button>
-          <input type="month" id="homeMonthPicker" onchange="renderHome()">
-          <button class="btn btn-secondary" onclick="changeHomeMonth(1)">▶</button>
-          <label style="margin-left:8px;font-size:12px;color:var(--ink-soft);font-weight:600">👥 ดูของ:</label>
-          <select class="search-input" id="homePerson" onchange="renderHome()" style="min-width:210px"></select>
-          <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="homeMonthTitle"></span>
-        </div>
-        <div id="homeSummary"></div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> กะเช้า</div>
-          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
-          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
-          <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
-          <div class="legend-item"><div class="legend-box" style="background:#eef4f2;border:1px dashed #cddedb"></div> เช้าทำการ (จ-ศ)</div>
-          <div class="legend-item">📞 ดึก On call</div>
-        </div>
-        <div class="calendar" id="homeCalendar"></div>
-      </div>
-    </div>
-
-    <div id="panel-nurses" class="panel">
-      <div class="card">
-        <h2>👩‍⚕️ จัดการข้อมูลพยาบาล</h2>
-        <div class="toolbar">
-          <button class="btn btn-primary" onclick="openNurseModal()">➕ เพิ่ม</button>
-          <button class="btn btn-warning" onclick="openBulkEditModal()">✏️ แก้ไขหลายรายการ</button>
-          <button class="btn btn-success" onclick="document.getElementById('excelImport').click()">📥 Import Excel</button>
-          <input type="file" id="excelImport" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(event)">
-          <button class="btn btn-secondary" onclick="exportNursesExcel()">📤 Export Excel</button>
-          <input type="text" class="search-input" id="searchNurse" placeholder="🔍 ค้นหา..." oninput="renderNurses()">
-          <select class="search-input" id="filterGen" onchange="renderNurses()">
-            <option value="">ทุกรุ่น</option>
-            <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
-            <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (Pre-op)</option>
-            <option value="staff">Staff (เช้าวันหยุด)</option>
-          </select>
-          <select class="search-input" id="sortNurse" onchange="renderNurses()" title="จัดเรียง">
-            <option value="gen">↕ เรียงตามรุ่น</option>
-            <option value="code">↕ เรียงตามรหัส</option>
-            <option value="name">↕ เรียงตามชื่อ</option>
-          </select>
-          <button class="btn btn-secondary" id="sortDirBtn" onclick="toggleNurseSortDir()" title="สลับลำดับ ขึ้น/ลง">⬆️ น้อย→มาก</button>
-          <span style="margin-left:auto;color:#64748b;font-size:12px" id="nurseCount"></span>
-        </div>
-        <div class="alert alert-info">💡 <strong>วันหยุด:</strong> Pre-op เช้า 1 คน + Pre-op บ่าย 1 คน (รุ่น 4) | <strong>วันธรรมดา:</strong> Pre-op 1 คน</div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr>
-              <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-              <th>รหัส</th><th>ชื่อ-นามสกุล</th><th>รุ่น</th><th>เบอร์โทร</th><th>วัน/กะที่ไม่สะดวก</th><th>จัดการ</th>
-            </tr></thead>
-            <tbody id="nurseTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div id="panel-calendar" class="panel">
-      <div class="card">
-        <h2>📅 ปฏิทินเวรประจำเดือน</h2>
-        <div class="toolbar">
-          <button class="btn btn-secondary" onclick="changeMonth(-1)">◀</button>
-          <input type="month" id="monthPicker" onchange="renderCalendar()">
-          <button class="btn btn-secondary" onclick="changeMonth(1)">▶</button>
-          <button class="btn btn-success" onclick="exportPDF()">📄 PDF</button>
-          <button class="btn btn-warning" onclick="exportCSV()">📊 CSV</button>
-          <button class="btn btn-primary" onclick="exportScheduleMatrix()">📗 Excel (ตาราง)</button>
-          <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="monthTitle"></span>
-        </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> กะเช้า (วันหยุด)</div>
-          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
-          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
-          <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
-          <div class="legend-item"><div class="legend-box" style="background:#fee2e2"></div> วันหยุด</div>
-        </div>
-        <div class="calendar" id="calendar"></div>
-      </div>
-    </div>
-
-    <div id="panel-schedule" class="panel">
-      <div class="card">
-        <h2>⚙️ จัดเวรอัตโนมัติ</h2>
-        <div class="alert alert-info">
-          📋 <strong>เงื่อนไขการจัดเวร:</strong><br>
-          • <strong>วันธรรมดา (จ-ศ):</strong> ❌ ไม่มีกะเช้า / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • <strong>วันหยุด (ส-อา/นักขัตฤกษ์):</strong> กะเช้า 2 ทีม (เช้า1 + เช้า2 = 6 คน) + Pre-op เช้า 1 คน / กะบ่าย 2 ทีม (บ่าย1 + บ่าย2 = 6 คน) + Pre-op บ่าย 1 คน / กะดึก 1 ทีม (3 คน)<br>
-          • แต่ละทีม 3 คนคนละรุ่น (ไม่ซ้ำรุ่น) • เฉลี่ยเช้า1/เช้า2/บ่าย1/บ่าย2 เท่า ๆ กัน • รุ่น 4 = Pre-op • <strong>รุ่น Staff</strong> ได้เวรเช้าวันหยุด <strong>3 เวร/เดือน</strong> (สิทธิ์ก่อน แล้วเวรเช้าที่เหลือเฉลี่ยให้รุ่น 1-3)<br>
-          • <strong>ต่อเนื่อง:</strong> บ่าย→ไม่จัดดึกวันถัดไป • เมื่อวานหยุด(ไม่มีเวร)→วันนี้ไม่จัดดึก • บ่ายห้ามติดกัน 3 วัน (ทั้งวันธรรมดา/วันหยุด) • วันธรรมดา: ดึกกับบ่ายไม่ใช่คนเดียวกันในวันเดียว &amp; บ่ายไม่ติดกัน 2 วัน • วันหยุด: 1 คน 1 เวร/วัน <em>(เงื่อนไขบ่าย/ดึกเป็นแบบผ่อนปรนได้ถ้าคนไม่พอ)</em>
-        </div>
-        <div class="toolbar">
-          <label>เดือน:</label>
-          <input type="month" id="scheduleMonth">
-          <button class="btn btn-success" onclick="autoSchedule()">🤖 จัดเวรอัตโนมัติ</button>
-          <button class="btn btn-danger" onclick="clearSchedule()">🗑️ ล้างเวร</button>
-        </div>
-        <div id="scheduleResult"></div>
-      </div>
-      <div class="card">
-        <h2>➕ เพิ่มเวรกำหนดเอง</h2>
-        <div class="alert alert-info">💡 สร้างเวรพิเศษ (เช่น ประชุม/อบรม) กำหนดชื่อ กะเวลา ช่วงวันที่ และสุ่มคนที่ยังไม่มีเวรในวันนั้น</div>
-        <div class="toolbar">
-          <button class="btn btn-primary" onclick="openCustomShiftModal()">➕ เพิ่มเวร</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="panel-holidays" class="panel">
-      <div class="card">
-        <h2>🎌 จัดการวันหยุดพิเศษ</h2>
-        <div class="toolbar">
-          <button class="btn btn-primary" onclick="openHolidayModal()">➕ เพิ่มวันหยุด</button>
-          <select class="search-input" id="filterHolidayYear" onchange="renderHolidays()">
-            <option value="2025">ปี 2568 (2025)</option>
-            <option value="2026">ปี 2569 (2026)</option>
-            <option value="2027">ปี 2570 (2027)</option>
-          </select>
-        </div>
-        <div class="alert alert-info">💡 วันหยุดที่เพิ่มจะถูกรวมกับวันหยุดนักขัตฤกษ์ที่มีอยู่แล้ว</div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr><th>วันที่</th><th>วัน</th><th>ชื่อ</th><th>จัดการ</th></tr></thead>
-            <tbody id="holidayTable"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card">
-        <h2>📋 วันหยุดนักขัตฤกษ์ (มีอยู่แล้ว)</h2>
-        <div class="alert alert-warn">⚠️ รายการนี้เป็นวันหยุดราชการที่มีอยู่แล้วในระบบ ไม่สามารถลบได้</div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr><th>วันที่</th><th>วันในสัปดาห์</th></tr></thead>
-            <tbody id="officialHolidayTable"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div id="panel-swap" class="panel">
-      <div class="card">
-        <h2>🔄 ระบบขอแลกเวร</h2>
-        <div id="swapActions"></div>
-        <div id="swapList" style="margin-top:14px"></div>
-      </div>
-    </div>
-
-    <div id="panel-leave" class="panel">
-      <div class="card">
-        <h2>🌴 ระบบวันลา</h2>
-        <div class="alert alert-info">💡 ประเภทการลา: 📄 ลากิจ · 🤒 ลาป่วย · 🌴 ลาพักร้อน — เมื่ออนุมัติแล้ว ระบบจะไม่จัดเวรให้ในวันที่ลา และถ้า<strong>ลาป่วย</strong>ทับวันที่มีเวรอยู่ ระบบจะแนะนำคนขึ้นแทน</div>
-        <div id="leaveActions"></div>
-        <div id="leaveList" style="margin-top:14px"></div>
-      </div>
-    </div>
-
-    <div id="panel-stats" class="panel">
-      <div class="card">
-        <h2>📊 สถิติการเข้าเวร</h2>
-        <div class="toolbar">
-          <label>เดือน:</label>
-          <input type="month" id="statsMonth" onchange="renderStats()">
-        </div>
-        <div class="stats-grid" id="statsGrid"></div>
-      </div>
-    </div>
-
-    <div id="panel-settings" class="panel">
-      <div class="card">
-        <h2>⚡ ตั้งค่าระบบ</h2>
-        <div class="grid-2">
-          <div>
-            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">💾 จัดการข้อมูล</h3>
-            <button class="btn btn-success" onclick="loadSampleData()" style="margin-bottom:6px;width:100%">🎲 โหลดข้อมูลตัวอย่าง 42 คน</button>
-            <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:6px;width:100%">📤 Export JSON</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-bottom:6px;width:100%">📥 Import JSON</button>
-            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-            <button class="btn btn-danger" onclick="resetAll()" style="width:100%">🗑️ รีเซ็ตทั้งหมด</button>
-          </div>
-          <div>
-            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">📌 ข้อมูลระบบ</h3>
-            <div class="alert alert-info">
-              • พยาบาล: <strong id="infoNurses">0</strong> คน<br>
-              • เดือนที่มีตาราง: <strong id="infoMonths">0</strong> เดือน<br>
-              • คำขอแลกเวร: <strong id="infoSwaps">0</strong> รายการ<br>
-              • คำขอลา: <strong id="infoLeaves">0</strong> รายการ<br>
-              • วันหยุดพิเศษ: <strong id="infoHolidays">0</strong> วัน<br>
-              • ผู้ใช้ระบบ: <strong id="infoUsers">0</strong> คน
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>☁️ ฐานข้อมูลออนไลน์ (Google Sheets)</h2>
-        <div class="alert alert-info">
-          ข้อมูล <strong>พยาบาล / ตารางเวร / วันหยุด / คำขอแลกเวร / ผู้ใช้ระบบ</strong> ถูกเก็บกลางไว้ที่ Google Sheet เดียวกัน ทุกเครื่อง/ทุกคนที่เข้าระบบจะเห็นข้อมูลตรงกันโดยอัตโนมัติ<br>
-          🔒 ที่อยู่ชีตและรหัสผ่านเชื่อมต่อถูกเก็บไว้ฝั่งเซิร์ฟเวอร์ (Cloudflare Worker) เท่านั้น ไม่ถูกส่งมาที่เบราว์เซอร์ จึงไม่มีทางเห็นได้จาก view-source หรือแท็บ Network เหมือนก่อนหน้านี้
-        </div>
-        <div class="toolbar">
-          <button class="btn btn-secondary" onclick="cloudPull(true)">⬇️ ดึงข้อมูลล่าสุดจากชีต</button>
-          <button class="btn btn-success" onclick="cloudPush(true)">⬆️ ส่งข้อมูลปัจจุบันขึ้นชีต</button>
-          <span style="margin-left:auto;font-size:11px;color:#64748b" id="cloudStatus">ยังไม่เคยซิงค์</span>
-        </div>
-      </div>
-      <div class="card">
-        <h2>📝 คู่มือการใช้งาน</h2>
-        <div class="alert alert-info">
-          <strong>ขั้นตอนการใช้งาน:</strong><br>
-          1. ไปที่แท็บ "ตั้งค่า" → กด "โหลดข้อมูลตัวอย่าง 42 คน"<br>
-          2. แก้ไขข้อมูลพยาบาลในแท็บ "พยาบาล" (กำหนดรุ่น 1-4, วันไม่สะดวก, และกะที่ไม่สะดวก)<br>
-          3. เพิ่มวันหยุดพิเศษในแท็บ "วันหยุด" (ถ้าต้องการ)<br>
-          4. ไปที่แท็บ "จัดเวร" เลือกเดือนแล้วกด "จัดเวรอัตโนมัติ"<br>
-          5. ดูตารางเวรในแท็บ "ปฏิทิน" กดที่วันเพื่อดูรายละเอียด<br>
-          6. หากต้องการแลกเวร ใช้แท็บ "แลกเวร" (ต้อง login ก่อน)<br>
-          7. Export PDF/CSV/Excel ได้จากแท็บปฏิทินและพยาบาล
-        </div>
-      </div>
-    </div>
-
-    <div id="panel-users" class="panel">
-      <div class="card">
-        <h2>👥 จัดการผู้ใช้ระบบ</h2>
-        <button class="btn btn-primary" onclick="openUserModal()" style="margin-bottom:12px">➕ เพิ่มผู้ใช้</button>
-        <div class="alert alert-info">
-          <strong>บทบาท:</strong><br>
-          • <span class="badge badge-role-admin">ผู้ดูแลระบบ</span> - จัดการทุกอย่าง (พยาบาล, เวร, ผู้ใช้, อนุมัติแลกเวร)<br>
-          • <span class="badge badge-role-approver">ผู้อนุมัติ</span> - อนุมัติ/ปฏิเสธคำขอแลกเวร + ดูปฏิทิน/สถิติ<br>
-          • <span class="badge badge-role-requester">ผู้ยื่นคำขอ</span> - ยื่นคำขอแลกเวร + ดูปฏิทิน/สถิติ
-        </div>
-        <table>
-          <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>พยาบาลที่ผูก</th><th>จัดการ</th></tr></thead>
-          <tbody id="userTable"></tbody>
-        </table>
-      </div>
-    </div>
+    <div id="panel-home" class="panel active" data-panel="home"></div>
+    <div id="panel-nurses" class="panel" data-panel="nurses"></div>
+    <div id="panel-calendar" class="panel" data-panel="calendar"></div>
+    <div id="panel-schedule" class="panel" data-panel="schedule"></div>
+    <div id="panel-holidays" class="panel" data-panel="holidays"></div>
+    <div id="panel-swap" class="panel" data-panel="swap"></div>
+    <div id="panel-leave" class="panel" data-panel="leave"></div>
+    <div id="panel-stats" class="panel" data-panel="stats"></div>
+    <div id="panel-settings" class="panel" data-panel="settings"></div>
+    <div id="panel-users" class="panel" data-panel="users"></div>
 
   </div>
 </div>
@@ -2950,7 +2722,22 @@ function loadSampleData(){
 }
 
 // ============ INIT ============
+// โหลดโครงสร้าง HTML ของแต่ละแท็บจากไฟล์ public/panels/<ชื่อ>.html แล้วฉีดเข้า panel
+// ต้องทำก่อน render/initApp เพราะฟังก์ชันเหล่านั้นอ้างถึง element ที่อยู่ภายใน panel
+async function loadPanels(){
+  const panels=document.querySelectorAll('#mainApp .panel[data-panel]');
+  await Promise.all([...panels].map(async el=>{
+    const name=el.getAttribute('data-panel');
+    try{
+      const res=await fetch('panels/'+name+'.html');
+      if(res.ok){el.innerHTML=await res.text();}
+      else{console.error('โหลด panel '+name+' ไม่สำเร็จ: HTTP '+res.status);}
+    }catch(e){console.error('โหลด panel '+name+' ไม่สำเร็จ:',e.message);}
+  }));
+}
+
 window.onload=async function(){
+  await loadPanels();
   showLoginNotice();
   try{
     const me=await fetch('/auth/me').then(r=>r.json());

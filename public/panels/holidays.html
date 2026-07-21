@@ -1,0 +1,28 @@
+      <div class="card">
+        <h2>🎌 จัดการวันหยุดพิเศษ</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openHolidayModal()">➕ เพิ่มวันหยุด</button>
+          <select class="search-input" id="filterHolidayYear" onchange="renderHolidays()">
+            <option value="2025">ปี 2568 (2025)</option>
+            <option value="2026">ปี 2569 (2026)</option>
+            <option value="2027">ปี 2570 (2027)</option>
+          </select>
+        </div>
+        <div class="alert alert-info">💡 วันหยุดที่เพิ่มจะถูกรวมกับวันหยุดนักขัตฤกษ์ที่มีอยู่แล้ว</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>วันที่</th><th>วัน</th><th>ชื่อ</th><th>จัดการ</th></tr></thead>
+            <tbody id="holidayTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📋 วันหยุดนักขัตฤกษ์ (มีอยู่แล้ว)</h2>
+        <div class="alert alert-warn">⚠️ รายการนี้เป็นวันหยุดราชการที่มีอยู่แล้วในระบบ ไม่สามารถลบได้</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>วันที่</th><th>วันในสัปดาห์</th></tr></thead>
+            <tbody id="officialHolidayTable"></tbody>
+          </table>
+        </div>
+      </div>

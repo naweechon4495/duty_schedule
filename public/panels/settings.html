@@ -1,0 +1,49 @@
+      <div class="card">
+        <h2>⚡ ตั้งค่าระบบ</h2>
+        <div class="grid-2">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">💾 จัดการข้อมูล</h3>
+            <button class="btn btn-success" onclick="loadSampleData()" style="margin-bottom:6px;width:100%">🎲 โหลดข้อมูลตัวอย่าง 42 คน</button>
+            <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:6px;width:100%">📤 Export JSON</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-bottom:6px;width:100%">📥 Import JSON</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn btn-danger" onclick="resetAll()" style="width:100%">🗑️ รีเซ็ตทั้งหมด</button>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px;color:var(--primary-dark)">📌 ข้อมูลระบบ</h3>
+            <div class="alert alert-info">
+              • พยาบาล: <strong id="infoNurses">0</strong> คน<br>
+              • เดือนที่มีตาราง: <strong id="infoMonths">0</strong> เดือน<br>
+              • คำขอแลกเวร: <strong id="infoSwaps">0</strong> รายการ<br>
+              • คำขอลา: <strong id="infoLeaves">0</strong> รายการ<br>
+              • วันหยุดพิเศษ: <strong id="infoHolidays">0</strong> วัน<br>
+              • ผู้ใช้ระบบ: <strong id="infoUsers">0</strong> คน
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>☁️ ฐานข้อมูลออนไลน์ (Google Sheets)</h2>
+        <div class="alert alert-info">
+          ข้อมูล <strong>พยาบาล / ตารางเวร / วันหยุด / คำขอแลกเวร / ผู้ใช้ระบบ</strong> ถูกเก็บกลางไว้ที่ Google Sheet เดียวกัน ทุกเครื่อง/ทุกคนที่เข้าระบบจะเห็นข้อมูลตรงกันโดยอัตโนมัติ<br>
+          🔒 ที่อยู่ชีตและรหัสผ่านเชื่อมต่อถูกเก็บไว้ฝั่งเซิร์ฟเวอร์ (Cloudflare Worker) เท่านั้น ไม่ถูกส่งมาที่เบราว์เซอร์ จึงไม่มีทางเห็นได้จาก view-source หรือแท็บ Network เหมือนก่อนหน้านี้
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="cloudPull(true)">⬇️ ดึงข้อมูลล่าสุดจากชีต</button>
+          <button class="btn btn-success" onclick="cloudPush(true)">⬆️ ส่งข้อมูลปัจจุบันขึ้นชีต</button>
+          <span style="margin-left:auto;font-size:11px;color:#64748b" id="cloudStatus">ยังไม่เคยซิงค์</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📝 คู่มือการใช้งาน</h2>
+        <div class="alert alert-info">
+          <strong>ขั้นตอนการใช้งาน:</strong><br>
+          1. ไปที่แท็บ "ตั้งค่า" → กด "โหลดข้อมูลตัวอย่าง 42 คน"<br>
+          2. แก้ไขข้อมูลพยาบาลในแท็บ "พยาบาล" (กำหนดรุ่น 1-4, วันไม่สะดวก, และกะที่ไม่สะดวก)<br>
+          3. เพิ่มวันหยุดพิเศษในแท็บ "วันหยุด" (ถ้าต้องการ)<br>
+          4. ไปที่แท็บ "จัดเวร" เลือกเดือนแล้วกด "จัดเวรอัตโนมัติ"<br>
+          5. ดูตารางเวรในแท็บ "ปฏิทิน" กดที่วันเพื่อดูรายละเอียด<br>
+          6. หากต้องการแลกเวร ใช้แท็บ "แลกเวร" (ต้อง login ก่อน)<br>
+          7. Export PDF/CSV/Excel ได้จากแท็บปฏิทินและพยาบาล
+        </div>
+      </div>
