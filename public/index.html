@@ -205,24 +205,11 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- LOGIN PAGE -->
-<div id="loginPage">
+<!-- LOGIN PAGE (โครงสร้างอยู่ที่ public/partials/login.html โหลดตอน runtime) -->
+<div id="loginPage" data-src="partials/login.html">
   <div class="login-container">
     <div class="login-logo">🏥</div>
-    <h2>ระบบจัดเวรพยาบาล<br>โรงพยาบาลลำพูน</h2>
-    <div class="alert alert-info" style="font-size:11px">กรุณาเข้าสู่ระบบเพื่อใช้งาน</div>
-    <div id="loginNotice"></div>
-    <div class="form-group">
-      <label>👤 ชื่อผู้ใช้</label>
-      <input type="text" id="loginUsername" placeholder="กรอกชื่อผู้ใช้">
-    </div>
-    <div class="form-group">
-      <label>🔒 รหัสผ่าน</label>
-      <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" onkeypress="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="btn btn-primary" onclick="doLogin()">🔑 เข้าสู่ระบบ</button>
-    <div style="text-align:center;color:#94a3b8;font-size:11px;margin:12px 0">หรือ</div>
-    <button class="btn" style="width:100%;justify-content:center;padding:12px;font-size:14px;background:#06C755;color:#fff" onclick="location.href='/auth/line/login'">💬 เข้าสู่ระบบด้วย LINE</button>
+    <p style="text-align:center;color:#64748b;font-size:13px">กำลังโหลด...</p>
   </div>
 </div>
 
@@ -254,16 +241,16 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 
   <div class="container">
 
-    <div id="panel-home" class="panel active" data-panel="home"></div>
-    <div id="panel-nurses" class="panel" data-panel="nurses"></div>
-    <div id="panel-calendar" class="panel" data-panel="calendar"></div>
-    <div id="panel-schedule" class="panel" data-panel="schedule"></div>
-    <div id="panel-holidays" class="panel" data-panel="holidays"></div>
-    <div id="panel-swap" class="panel" data-panel="swap"></div>
-    <div id="panel-leave" class="panel" data-panel="leave"></div>
-    <div id="panel-stats" class="panel" data-panel="stats"></div>
-    <div id="panel-settings" class="panel" data-panel="settings"></div>
-    <div id="panel-users" class="panel" data-panel="users"></div>
+    <div id="panel-home" class="panel active" data-src="panels/home.html"></div>
+    <div id="panel-nurses" class="panel" data-src="panels/nurses.html"></div>
+    <div id="panel-calendar" class="panel" data-src="panels/calendar.html"></div>
+    <div id="panel-schedule" class="panel" data-src="panels/schedule.html"></div>
+    <div id="panel-holidays" class="panel" data-src="panels/holidays.html"></div>
+    <div id="panel-swap" class="panel" data-src="panels/swap.html"></div>
+    <div id="panel-leave" class="panel" data-src="panels/leave.html"></div>
+    <div id="panel-stats" class="panel" data-src="panels/stats.html"></div>
+    <div id="panel-settings" class="panel" data-src="panels/settings.html"></div>
+    <div id="panel-users" class="panel" data-src="panels/users.html"></div>
 
   </div>
 </div>
@@ -919,6 +906,7 @@ function initApp(){
 
 // ============ PANELS ============
 function showPanel(name,btn){
+  if(!currentUser){checkLogin();return;} // ยังไม่ล็อกอิน → กลับไปหน้า login ก่อน
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
@@ -2722,22 +2710,22 @@ function loadSampleData(){
 }
 
 // ============ INIT ============
-// โหลดโครงสร้าง HTML ของแต่ละแท็บจากไฟล์ public/panels/<ชื่อ>.html แล้วฉีดเข้า panel
-// ต้องทำก่อน render/initApp เพราะฟังก์ชันเหล่านั้นอ้างถึง element ที่อยู่ภายใน panel
-async function loadPanels(){
-  const panels=document.querySelectorAll('#mainApp .panel[data-panel]');
-  await Promise.all([...panels].map(async el=>{
-    const name=el.getAttribute('data-panel');
+// โหลดโครงสร้าง HTML ของแต่ละส่วน (หน้า login + แต่ละแท็บ) จากไฟล์ย่อยตาม data-src แล้วฉีดเข้า element
+// ต้องทำก่อน render/initApp/checkLogin เพราะฟังก์ชันเหล่านั้นอ้างถึง element ที่อยู่ภายในไฟล์ย่อย
+async function loadPartials(){
+  const nodes=document.querySelectorAll('[data-src]');
+  await Promise.all([...nodes].map(async el=>{
+    const src=el.getAttribute('data-src');
     try{
-      const res=await fetch('panels/'+name+'.html');
+      const res=await fetch(src);
       if(res.ok){el.innerHTML=await res.text();}
-      else{console.error('โหลด panel '+name+' ไม่สำเร็จ: HTTP '+res.status);}
-    }catch(e){console.error('โหลด panel '+name+' ไม่สำเร็จ:',e.message);}
+      else{console.error('โหลด '+src+' ไม่สำเร็จ: HTTP '+res.status);}
+    }catch(e){console.error('โหลด '+src+' ไม่สำเร็จ:',e.message);}
   }));
 }
 
 window.onload=async function(){
-  await loadPanels();
+  await loadPartials();
   showLoginNotice();
   try{
     const me=await fetch('/auth/me').then(r=>r.json());
