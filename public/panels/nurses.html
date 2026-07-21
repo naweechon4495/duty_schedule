@@ -1,0 +1,34 @@
+      <div class="card">
+        <h2>👩‍⚕️ จัดการข้อมูลพยาบาล</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openNurseModal()">➕ เพิ่ม</button>
+          <button class="btn btn-warning" onclick="openBulkEditModal()">✏️ แก้ไขหลายรายการ</button>
+          <button class="btn btn-success" onclick="document.getElementById('excelImport').click()">📥 Import Excel</button>
+          <input type="file" id="excelImport" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(event)">
+          <button class="btn btn-secondary" onclick="exportNursesExcel()">📤 Export Excel</button>
+          <input type="text" class="search-input" id="searchNurse" placeholder="🔍 ค้นหา..." oninput="renderNurses()">
+          <select class="search-input" id="filterGen" onchange="renderNurses()">
+            <option value="">ทุกรุ่น</option>
+            <option value="1">รุ่น 1</option><option value="2">รุ่น 2</option>
+            <option value="3">รุ่น 3</option><option value="4">รุ่น 4 (Pre-op)</option>
+            <option value="staff">Staff (เช้าวันหยุด)</option>
+          </select>
+          <select class="search-input" id="sortNurse" onchange="renderNurses()" title="จัดเรียง">
+            <option value="gen">↕ เรียงตามรุ่น</option>
+            <option value="code">↕ เรียงตามรหัส</option>
+            <option value="name">↕ เรียงตามชื่อ</option>
+          </select>
+          <button class="btn btn-secondary" id="sortDirBtn" onclick="toggleNurseSortDir()" title="สลับลำดับ ขึ้น/ลง">⬆️ น้อย→มาก</button>
+          <span style="margin-left:auto;color:#64748b;font-size:12px" id="nurseCount"></span>
+        </div>
+        <div class="alert alert-info">💡 <strong>วันหยุด:</strong> Pre-op เช้า 1 คน + Pre-op บ่าย 1 คน (รุ่น 4) | <strong>วันธรรมดา:</strong> Pre-op 1 คน</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+              <th>รหัส</th><th>ชื่อ-นามสกุล</th><th>รุ่น</th><th>เบอร์โทร</th><th>วัน/กะที่ไม่สะดวก</th><th>จัดการ</th>
+            </tr></thead>
+            <tbody id="nurseTable"></tbody>
+          </table>
+        </div>
+      </div>

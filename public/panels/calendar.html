@@ -1,0 +1,20 @@
+      <div class="card">
+        <h2>📅 ปฏิทินเวรประจำเดือน</h2>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="changeMonth(-1)">◀</button>
+          <input type="month" id="monthPicker" onchange="renderCalendar()">
+          <button class="btn btn-secondary" onclick="changeMonth(1)">▶</button>
+          <button class="btn btn-success" onclick="exportPDF()">📄 PDF</button>
+          <button class="btn btn-warning" onclick="exportCSV()">📊 CSV</button>
+          <button class="btn btn-primary" onclick="exportScheduleMatrix()">📗 Excel (ตาราง)</button>
+          <span style="margin-left:auto;font-weight:700;color:var(--primary-dark)" id="monthTitle"></span>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> กะเช้า (วันหยุด)</div>
+          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> กะบ่าย</div>
+          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> กะดึก</div>
+          <div class="legend-item"><div class="legend-box" style="background:#e0e7ff"></div> Pre-op</div>
+          <div class="legend-item"><div class="legend-box" style="background:#fee2e2"></div> วันหยุด</div>
+        </div>
+        <div class="calendar" id="calendar"></div>
+      </div>

@@ -1,0 +1,14 @@
+      <div class="card">
+        <h2>👥 จัดการผู้ใช้ระบบ</h2>
+        <button class="btn btn-primary" onclick="openUserModal()" style="margin-bottom:12px">➕ เพิ่มผู้ใช้</button>
+        <div class="alert alert-info">
+          <strong>บทบาท:</strong><br>
+          • <span class="badge badge-role-admin">ผู้ดูแลระบบ</span> - จัดการทุกอย่าง (พยาบาล, เวร, ผู้ใช้, อนุมัติแลกเวร)<br>
+          • <span class="badge badge-role-approver">ผู้อนุมัติ</span> - อนุมัติ/ปฏิเสธคำขอแลกเวร + ดูปฏิทิน/สถิติ<br>
+          • <span class="badge badge-role-requester">ผู้ยื่นคำขอ</span> - ยื่นคำขอแลกเวร + ดูปฏิทิน/สถิติ
+        </div>
+        <table>
+          <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>พยาบาลที่ผูก</th><th>จัดการ</th></tr></thead>
+          <tbody id="userTable"></tbody>
+        </table>
+      </div>
