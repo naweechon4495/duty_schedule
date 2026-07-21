@@ -1,0 +1,14 @@
+      <div class="card">
+        <h2>👥 จัดการรายชื่อผู้ช่วยพยาบาล (NA)</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openAssistantModal()">➕ เพิ่ม</button>
+          <span style="margin-left:auto;color:#64748b;font-size:12px" id="assistantCount"></span>
+        </div>
+        <div class="alert alert-info">💡 ผู้ช่วยพยาบาลเป็นรายชื่อแยกจากพยาบาล — ใช้จัดเวร NA โดยเฉพาะ (เช้า/บ่าย/ดึก + เช้าทำการ)</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>เบอร์โทร</th><th>วัน/กะที่ไม่สะดวก</th><th>จัดการ</th></tr></thead>
+            <tbody id="assistantTable"></tbody>
+          </table>
+        </div>
+      </div>

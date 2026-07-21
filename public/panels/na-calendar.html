@@ -1,0 +1,16 @@
+      <div class="card">
+        <h2>📅 ปฏิทินเวรผู้ช่วยพยาบาล</h2>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="changeNAMonth(-1)">◀</button>
+          <input type="month" id="naCalMonth" onchange="renderNACalendar()">
+          <button class="btn btn-secondary" onclick="changeNAMonth(1)">▶</button>
+          <span style="margin-left:auto;font-weight:700;color:#16a34a" id="naCalTitle"></span>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-box" style="background:#fef3c7"></div> เช้า</div>
+          <div class="legend-item"><div class="legend-box" style="background:#dbeafe"></div> บ่าย</div>
+          <div class="legend-item"><div class="legend-box" style="background:#334155"></div> ดึก</div>
+          <div class="legend-item"><div class="legend-box" style="background:#fee2e2"></div> วันหยุด</div>
+        </div>
+        <div class="calendar" id="naCalendar"></div>
+      </div>
