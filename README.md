@@ -7,10 +7,14 @@ Lamphun Hospital Nurse Scheduling System — เว็บแอปจัดต�
 
 | ไฟล์ | หน้าที่ |
 |------|---------|
-| `public/index.html` | ตัวเว็บแอปทั้งหมด (HTML/CSS/JS ไฟล์เดียว) — จัดการพยาบาล จัดเวร ปฏิทิน แลกเวร สถิติ |
+| `public/index.html` | โครงหลักของเว็บแอป — CSS + JS ทั้งหมด + โครง `<div>` ของแต่ละแท็บ (ว่าง) ที่โหลดเนื้อหาจากไฟล์ย่อยตอน runtime |
+| `public/partials/login.html` | โครงสร้าง HTML ของหน้าเข้าสู่ระบบ (โหลดตอน runtime) |
+| `public/panels/*.html` | โครงสร้าง HTML ของแต่ละแท็บ — ฝั่งพยาบาล (`home`, `nurses`, `calendar`, `schedule`, `holidays`, `swap`, `leave`, `stats`, `settings`, `users`) และฝั่ง NA (`na-home`, `na-assistants`, `na-schedule`, `na-calendar`, `na-swap`, `na-leave`, `na-stats`) |
 | `src/worker.js` | Cloudflare Worker — เป็นตัวกลางคุยกับ Google Sheet (`/api/data`) และ LINE Login (`/auth/*`) โดยเก็บ token ไว้ฝั่งเซิร์ฟเวอร์ |
 | `apps_script_backend.gs` | โค้ด Google Apps Script — วางในชีต แล้ว Deploy เป็น Web App เพื่อทำหน้าที่เป็น REST API อ่าน/เขียนแต่ละแท็บ |
 | `wrangler.toml` | คอนฟิก Cloudflare Worker (ไม่มีความลับ — ค่าลับทั้งหมดเป็น Secret) |
+
+> 🧩 **สถาปัตยกรรมหน้าเว็บ:** `index.html` เก็บ CSS/JS ทั้งหมดไว้ในไฟล์เดียว แต่ **โครงสร้าง HTML ของแต่ละส่วนแยกเป็นไฟล์ย่อย** ใน `public/partials/` และ `public/panels/` — เมื่อเปิดแอป ฟังก์ชัน `loadPartials()` จะ `fetch` ไฟล์เหล่านี้ (ตาม attribute `data-src`) มาฉีดเข้า DOM ก่อนเริ่มทำงาน ไฟล์ย่อยถูกเสิร์ฟเป็น static asset ตามปกติ (ไม่ต้องมี build step)
 
 ## ฟีเจอร์หลัก
 - จัดการข้อมูลพยาบาล 4 รุ่น + เงื่อนไขวัน/กะที่ไม่สะดวก 8 รูปแบบ
