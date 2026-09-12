@@ -53,13 +53,13 @@ var SHEETS = {
 var HEADERS = {
   nurses: ['id','code','name','generation','phone','unavailableDates','unavailableWeekdays','unavailableShifts','unavailableWeeks','unavailableMonths','unavailableShiftsInWeeks','unavailableShiftsInMonths','unavailableHolidays','fixedShifts'],
   schedule: ['month','day','shift','nurseId'],
-  swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
+  swaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type','shift2','approvedAt'],
   customHolidays: ['date','name'],
   users: ['username','password','fullname','role','lineUserId','nurseCode','assistantCode'],
   leaves: ['id','nurseId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt'],
   assistants: ['id','code','name','phone','unavailableDates','unavailableWeekdays','unavailableShifts'],
   naSchedule: ['month','day','shift','assistantId'],
-  naSwaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
+  naSwaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type','shift2','approvedAt'],
   naLeaves: ['id','assistantId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt'],
   naUsers: ['username','password','fullname','role','assistantCode']
 };
@@ -229,7 +229,7 @@ function readSwaps(sheet) {
       id: String(r[0]), from: String(r[1]), to: String(r[2]), date: String(r[3]), date2: String(r[4]),
       shift: String(r[5]), reason: String(r[6] || ''), status: String(r[7]),
       requestedBy: String(r[8] || ''), approvedBy: String(r[9] || ''), createdAt: String(r[10] || ''),
-      type: String(r[11] || 'swap')
+      type: String(r[11] || 'swap'), shift2: String(r[12] || ''), approvedAt: String(r[13] || '')
     });
   }
   return swaps;
@@ -238,7 +238,7 @@ function readSwaps(sheet) {
 function writeSwaps(sheet, swaps) {
   var rows = [HEADERS.swaps];
   swaps.forEach(function (s) {
-    rows.push([s.id, s.from, s.to, s.date, s.date2, s.shift, s.reason || '', s.status, s.requestedBy || '', s.approvedBy || '', s.createdAt || '', s.type || 'swap']);
+    rows.push([s.id, s.from, s.to, s.date, s.date2, s.shift, s.reason || '', s.status, s.requestedBy || '', s.approvedBy || '', s.createdAt || '', s.type || 'swap', s.shift2 || '', s.approvedAt || '']);
   });
   overwriteSheet(sheet, rows);
 }
