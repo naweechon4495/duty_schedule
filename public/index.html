@@ -2052,31 +2052,25 @@ function renderSwapActions(){
   }
   div.innerHTML=html;
 }
-// Export ประวัติการแลก/ยกเวร (ที่อนุมัติแล้ว) เป็น Excel
+// Export ประวัติการแลก/ยกเวร (ที่อนุมัติแล้ว) เป็นไฟล์ .xlsx จริงผ่าน SheetJS
+// (เดิมสร้าง HTML แล้วบันทึกเป็น .xls ทำให้ Excel เตือน "format and extension don't match")
 function exportSwapHistory(){
   try{
     const rows=swaps.filter(s=>s.status==='approved');
     if(rows.length===0){alert('⚠️ ยังไม่มีประวัติการแลก/ยกเวรที่อนุมัติแล้ว');return}
     const nm=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name:(id||'-')};
     const shLabel=(k)=>SHIFT_LABELS[k]||k||'-';
-    const bd='border:0.5px solid #999;';const ctr='text-align:center;';
-    let h='<table style="border-collapse:collapse;font-family:Sarabun,sans-serif;font-size:11px">';
-    h+='<tr>'+['ลำดับ','ชื่อผู้ยื่นคำขอแลก','วันที่แลก/ยก','เวร','ชื่อผู้รับแลก','วันที่แลก','เวร']
-      .map(t=>'<td style="'+bd+ctr+'font-weight:bold;background:#F2F2F2;padding:4px 6px">'+t+'</td>').join('')+'</tr>';
+    const aoa=[['ลำดับ','ชื่อผู้ยื่นคำขอแลก','วันที่แลก/ยก','เวร','ชื่อผู้รับแลก','วันที่แลก','เวร']];
     rows.forEach((s,i)=>{
       const give=s.type==='giveaway';
       const date2=give?s.date:(s.date2||s.date); // ยกเวร = วันเดียวกัน
-      const c=[i+1,nm(s.from),s.date,shLabel(s.shift),nm(s.to),date2,shLabel(s.shift)];
-      h+='<tr>'+c.map(v=>'<td style="'+bd+ctr+'padding:2px 6px">'+v+'</td>').join('')+'</tr>';
+      aoa.push([i+1,nm(s.from),s.date,shLabel(s.shift),nm(s.to),date2,shLabel(s.shift)]);
     });
-    h+='</table>';
-    const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ประวัติการแลกเวร</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>'+h+'</body></html>';
-    const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
-    const link=document.createElement('a');
-    link.href=URL.createObjectURL(blob);
-    link.download='ประวัติการแลกเวร_'+(new Date().toISOString().slice(0,10))+'.xls';
-    link.click();
-    setTimeout(()=>URL.revokeObjectURL(link.href),1500);
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:6},{wch:26},{wch:14},{wch:8},{wch:26},{wch:14},{wch:8}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'ประวัติการแลกเวร');
+    XLSX.writeFile(wb,'ประวัติการแลกเวร_'+(new Date().toISOString().slice(0,10))+'.xlsx');
   }catch(e){alert('❌ Export ไม่สำเร็จ: '+e.message)}
 }
 function onSwapTypeChange(){
