@@ -2060,14 +2060,14 @@ function exportSwapHistory(){
     if(rows.length===0){alert('⚠️ ยังไม่มีประวัติการแลก/ยกเวรที่อนุมัติแล้ว');return}
     const nm=(id)=>{const n=nurses.find(x=>x.id===id);return n?n.name:(id||'-')};
     const shLabel=(k)=>SHIFT_LABELS[k]||k||'-';
-    const aoa=[['ลำดับ','ชื่อผู้ยื่นคำขอแลก','วันที่แลก/ยก','เวร','ชื่อผู้รับแลก','วันที่แลก','เวร']];
+    const aoa=[['ลำดับ','วันเดือนปี','ชื่อ-นามสกุลผู้แลก','วันเดือนปีที่ขอแลก','เวรที่ขอแลก','ชื่อ-นามสกุลผู้รับแลก','เวรที่รับแลก','ประเภท','หมายเหตุ']];
     rows.forEach((s,i)=>{
-      const give=s.type==='giveaway';
-      const date2=give?s.date:(s.date2||s.date); // ยกเวร = วันเดียวกัน
-      aoa.push([i+1,nm(s.from),s.date,shLabel(s.shift),nm(s.to),date2,shLabel(s.shift)]);
+      const recordDate=s.createdAt?s.createdAt.slice(0,10):''; // วันที่ยื่นคำขอ
+      const typeLabel=s.type==='giveaway'?'ยกเวร':'แลกเวร';
+      aoa.push([i+1,recordDate,nm(s.from),s.date,shLabel(s.shift),nm(s.to),shLabel(s.shift),typeLabel,s.reason||'']);
     });
     const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:6},{wch:26},{wch:14},{wch:8},{wch:26},{wch:14},{wch:8}];
+    ws['!cols']=[{wch:6},{wch:12},{wch:26},{wch:16},{wch:10},{wch:26},{wch:10},{wch:10},{wch:30}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'ประวัติการแลกเวร');
     XLSX.writeFile(wb,'ประวัติการแลกเวร_'+(new Date().toISOString().slice(0,10))+'.xlsx');
