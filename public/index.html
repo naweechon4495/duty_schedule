@@ -134,6 +134,18 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
 .ssel-item:last-child{border-bottom:none}
 .ssel-item:hover,.ssel-item.active{background:var(--primary-light);color:var(--primary-darker)}
 .ssel-empty{padding:10px 12px;font-size:12px;color:var(--ink-mute)}
+.type-select{display:flex;gap:8px;flex-wrap:wrap}
+.type-select .type-card{flex:1 1 0;min-width:96px;margin:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:13px 8px;border:1.5px solid var(--line-strong);border-radius:var(--radius-md);cursor:pointer;background:var(--surface);transition:border-color .15s var(--ease),background .15s var(--ease),box-shadow .15s var(--ease),transform .1s var(--ease);position:relative;-webkit-tap-highlight-color:transparent}
+.type-select .type-card:hover{border-color:var(--primary);background:var(--primary-light)}
+.type-select .type-card:active{transform:scale(.98)}
+.type-select .type-card input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.type-select .type-card .tc-ic{font-size:23px;line-height:1;flex-shrink:0}
+.type-select .type-card .tc-t{font-weight:700;font-size:12.5px;color:var(--ink);line-height:1.2;margin:0}
+.type-select .type-card .tc-s{font-size:10.5px;color:var(--ink-soft);line-height:1.2;margin:0}
+.type-select .type-card:has(input:checked){border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 3px var(--focus)}
+.type-select .type-card:has(input:checked) .tc-t{color:var(--primary-darker)}
+.type-select .type-card:has(input:checked)::after{content:'✓';position:absolute;top:5px;right:8px;color:var(--primary);font-weight:800;font-size:12px}
+.type-select .type-card:has(input:focus-visible){border-color:var(--primary);box-shadow:0 0 0 3px var(--focus)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:768px){.grid-2{grid-template-columns:1fr}.calendar{font-size:8px}.cal-day{min-height:80px;padding:4px}.header{padding:16px}.header h1{font-size:16px}table{font-size:11px}th,td{padding:8px 7px}.user-info{position:static;transform:none;margin-top:10px}}
 @media(max-width:480px){
@@ -460,10 +472,19 @@ tbody tr:nth-child(even):hover{background:var(--primary-light)}
   <div class="modal-content">
     <h3 id="swapModalTitle">สร้างคำขอแลกเวร</h3>
     <div class="form-group"><label>ประเภท</label>
-      <div class="checkbox-group">
-        <label id="swapTypeSwapLabel"><input type="radio" name="swapType" value="swap" checked onchange="onSwapTypeChange()"> 🔄 แลกเวร (สลับกัน)</label>
-        <label id="swapTypeGiveLabel"><input type="radio" name="swapType" value="giveaway" onchange="onSwapTypeChange()"> ➡️ ยกเวร (ยกให้เลย)</label>
-        <label id="swapTypeSubLabel"><input type="radio" name="swapType" value="substitute" onchange="onSwapTypeChange()"> 🧑‍⚕️ แทนเวร (หัวหน้าเพิ่ม)</label>
+      <div class="type-select">
+        <label class="type-card" id="swapTypeSwapLabel">
+          <input type="radio" name="swapType" value="swap" checked onchange="onSwapTypeChange()">
+          <span class="tc-ic">🔄</span><span class="tc-t">แลกเวร</span><span class="tc-s">สลับเวรกัน</span>
+        </label>
+        <label class="type-card" id="swapTypeGiveLabel">
+          <input type="radio" name="swapType" value="giveaway" onchange="onSwapTypeChange()">
+          <span class="tc-ic">➡️</span><span class="tc-t">ยกเวร</span><span class="tc-s">ยกให้เลย</span>
+        </label>
+        <label class="type-card" id="swapTypeSubLabel">
+          <input type="radio" name="swapType" value="substitute" onchange="onSwapTypeChange()">
+          <span class="tc-ic">🧑‍⚕️</span><span class="tc-t">แทนเวร</span><span class="tc-s">หัวหน้าเพิ่ม</span>
+        </label>
       </div>
     </div>
     <div class="form-group"><label id="swapFromLabel">ผู้ขอ (พยาบาล A)</label>
