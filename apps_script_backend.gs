@@ -1,7 +1,10 @@
 /**
  * ===================================================================
  * Backend ฐานข้อมูลสำหรับ "ระบบจัดเวรพยาบาล โรงพยาบาลลำพูน"
- * เวอร์ชัน 2: แยกเป็นชีตย่อยต่อตาราง (Nurses / Schedule / Swaps / Holidays / Users)
+ * เวอร์ชัน 3: แยกเป็นชีตย่อยต่อตาราง + รองรับ 2 แอปแยกกัน (พยาบาล / ผู้ช่วยพยาบาล NA)
+ *   ฝั่งพยาบาล : Nurses / Schedule / Swaps / Holidays / Users / Leaves
+ *   ฝั่ง NA     : Assistants / NASchedule / NASwaps / NALeaves / NAUsers
+ *   ทั้งสองแอปใช้ชีตนี้ร่วมกัน แต่ Cloudflare Worker กรอง key แยก endpoint ให้ (/api/data กับ /api/na)
  * ===================================================================
  *
  * นี่คือโค้ดเวอร์ชันใหม่ ใช้แทนโค้ดเดิมที่เก็บทุกอย่างเป็น key/value ในชีตเดียว
@@ -43,7 +46,8 @@ var SHEETS = {
   assistants: 'Assistants',
   naSchedule: 'NASchedule',
   naSwaps: 'NASwaps',
-  naLeaves: 'NALeaves'
+  naLeaves: 'NALeaves',
+  naUsers: 'NAUsers'   // บัญชีผู้ใช้ของแอป NA (แยกจาก Users ของพยาบาลโดยสิ้นเชิง)
 };
 
 var HEADERS = {
@@ -56,7 +60,8 @@ var HEADERS = {
   assistants: ['id','code','name','phone','unavailableDates','unavailableWeekdays','unavailableShifts'],
   naSchedule: ['month','day','shift','assistantId'],
   naSwaps: ['id','from','to','date','date2','shift','reason','status','requestedBy','approvedBy','createdAt','type'],
-  naLeaves: ['id','assistantId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt']
+  naLeaves: ['id','assistantId','type','dateFrom','dateTo','reason','status','requestedBy','approvedBy','createdAt'],
+  naUsers: ['username','password','fullname','role','assistantCode']
 };
 
 function doGet(e) {
@@ -74,7 +79,8 @@ function doGet(e) {
     assistants: readAssistants(getOrCreateSheet(ss, SHEETS.assistants, HEADERS.assistants)),
     naSchedule: readSchedule2(getOrCreateSheet(ss, SHEETS.naSchedule, HEADERS.naSchedule)),
     naSwaps: readSwaps(getOrCreateSheet(ss, SHEETS.naSwaps, HEADERS.naSwaps)),
-    naLeaves: readNALeaves(getOrCreateSheet(ss, SHEETS.naLeaves, HEADERS.naLeaves))
+    naLeaves: readNALeaves(getOrCreateSheet(ss, SHEETS.naLeaves, HEADERS.naLeaves)),
+    naUsers: readNAUsers(getOrCreateSheet(ss, SHEETS.naUsers, HEADERS.naUsers))
   });
 }
 
@@ -102,6 +108,7 @@ function doPost(e) {
   if (data.naSchedule) writeSchedule2(getOrCreateSheet(ss, SHEETS.naSchedule, HEADERS.naSchedule), data.naSchedule);
   if (data.naSwaps) writeSwaps(getOrCreateSheet(ss, SHEETS.naSwaps, HEADERS.naSwaps), data.naSwaps);
   if (data.naLeaves) writeNALeaves(getOrCreateSheet(ss, SHEETS.naLeaves, HEADERS.naLeaves), data.naLeaves);
+  if (data.naUsers) writeNAUsers(getOrCreateSheet(ss, SHEETS.naUsers, HEADERS.naUsers), data.naUsers);
   return jsonOutput({ ok: true, savedAt: new Date().toISOString() });
 }
 
@@ -393,6 +400,28 @@ function writeNALeaves(sheet, leaves) {
   var rows = [HEADERS.naLeaves];
   leaves.forEach(function (l) {
     rows.push([l.id, l.assistantId, l.type, l.dateFrom, l.dateTo || l.dateFrom, l.reason || '', l.status || 'pending', l.requestedBy || '', l.approvedBy || '', l.createdAt || '']);
+  });
+  overwriteSheet(sheet, rows);
+}
+
+// ---------- NAUsers (บัญชีผู้ใช้ของแอป NA) ----------
+function readNAUsers(sheet) {
+  var rows = sheet.getDataRange().getValues();
+  var users = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0]) continue;
+    var user = { username: String(r[0]), password: String(r[1]), fullname: String(r[2]), role: String(r[3]) };
+    if (r[4]) user.assistantCode = String(r[4]);
+    users.push(user);
+  }
+  return users;
+}
+
+function writeNAUsers(sheet, users) {
+  var rows = [HEADERS.naUsers];
+  users.forEach(function (u) {
+    rows.push([u.username, u.password, u.fullname, u.role, u.assistantCode || '']);
   });
   overwriteSheet(sheet, rows);
 }

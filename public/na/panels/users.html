@@ -1,0 +1,14 @@
+      <div class="card">
+        <h2>👤 จัดการผู้ใช้ระบบ NA</h2>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openNAUserModal()">➕ เพิ่มผู้ใช้</button>
+          <span style="margin-left:auto;color:#64748b;font-size:12px">ทั้งหมด <strong id="infoNAUsers">0</strong> บัญชี</span>
+        </div>
+        <div class="alert alert-info">💡 บัญชีของแอป NA แยกจากระบบพยาบาลโดยสิ้นเชิง — บทบาท: <strong>ผู้ดูแล NA</strong> (จัดการทุกอย่าง) · <strong>ผู้ช่วยพยาบาล</strong> (ดูเวร/ลา/แลกเวรของตัวเอง)</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>บทบาท</th><th>ผูกกับ NA</th><th>จัดการ</th></tr></thead>
+            <tbody id="naUserTable"></tbody>
+          </table>
+        </div>
+      </div>
