@@ -119,7 +119,8 @@ export interface Assistant {
   phone: string;
   unavailableDates: string[];
   unavailableWeekdays: number[];
-  unavailableShifts: DateShift[];
+  /** กะที่ไม่สะดวกเป็นประจำ เช่น ["night"] */
+  unavailableShifts: string[];
 }
 
 export type NARole = "naadmin" | "assistant";
