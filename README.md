@@ -1,85 +1,73 @@
-# ระบบจัดเวรพยาบาล โรงพยาบาลลำพูน
+# ระบบจัดเวร โรงพยาบาลลำพูน
 
-Lamphun Hospital Nurse Scheduling System — เว็บแอปจัดตารางเวรอัตโนมัติ
-โฮสต์บน Cloudflare Workers และใช้ Google Sheets เป็นฐานข้อมูล
+ระบบจัดตารางเวร **พยาบาล** และ **ผู้ช่วยพยาบาล (NA)** — Next.js (vinext) บน Cloudflare Workers + ฐานข้อมูล Cloudflare D1
 
-ระบบแบ่งเป็น **2 แอปแยกกันโดยสิ้นเชิง** ใช้ชีตเดียวกัน (คนละแท็บ) แต่แยก endpoint กัน:
+| ส่วน | URL | บัญชีผู้ใช้ |
+|---|---|---|
+| ระบบพยาบาล | `/` (login ที่ `/login`) | ตาราง `users` |
+| ระบบ NA | `/na` (login ที่ `/na/login`) | ตาราง `na_users` (แยกกันโดยสิ้นเชิง) |
 
-| แอป | URL | สำหรับ |
-|-----|-----|--------|
-| ระบบพยาบาล | `/` | พยาบาล (admin / approver / requester) |
-| ระบบผู้ช่วยพยาบาล (NA) | `/na/` | ผู้ช่วยพยาบาล (naadmin / assistant) |
+## โครงสร้าง
 
-ทั้งสองแอปไม่เห็นข้อมูลของกันและกัน — Cloudflare Worker กรอง key แยกให้ที่ระดับเครือข่าย
-(`/api/data` คืนเฉพาะข้อมูลพยาบาล · `/api/na` คืนเฉพาะข้อมูล NA)
+```
+app/                    หน้าเว็บ (App Router)
+  (app)/                หน้าระบบพยาบาล — ตรวจ session ใน layout.tsx
+  na/(app)/             หน้าระบบ NA
+  api/                  API (route handlers) — ทุกคำขอตรวจ session + บทบาทที่เซิร์ฟเวอร์
+components/             UI (Tailwind + Radix) แยก ui/ shell/ calendar/ ...
+lib/domain/             business logic ล้วน (จัดเวรอัตโนมัติ, วันหยุด, ลา, แลกเวร) — ใช้ร่วม server/client
+lib/server/             D1, auth (PBKDF2 + session cookie), audit log, repositories
+migrations/             D1 schema
+scripts/migrate-from-sheet.mjs   ย้ายข้อมูลจาก Google Sheet เดิม → SQL
+tests/                  vitest (กติกาจัดเวร)
+legacy/                 ระบบเดิม (HTML + Apps Script) เก็บไว้อ้างอิงระหว่างสลับระบบ
+```
 
-## โครงสร้างโปรเจกต์
+**หลักการสำคัญ**
+- บันทึกทีละรายการ (ไม่ส่งข้อมูลทั้งชุดไปทับแบบระบบเดิม) — แก้พร้อมกันหลายเครื่องได้โดยข้อมูลไม่หาย
+- ทุกการแก้ไขเขียน `audit_log` ใน transaction เดียวกัน → ดูได้ที่หน้า **Log**
+- รหัสผ่านเก็บเป็น PBKDF2 hash, session เป็น cookie HttpOnly, API ไม่เคยส่งรหัสผ่าน/hash ออกไป
+- ตารางเวรเขียนทั้งเดือนด้วย 2 คำสั่ง (`DELETE` + `INSERT … json_each`) เพื่อไม่ชนเพดานจำนวน query ต่อ request
 
-| ไฟล์ | หน้าที่ |
-|------|---------|
-| `public/index.html` | **แอปพยาบาล** — โครงหลัก (CSS + JS ทั้งหมด) + โครง `<div>` ของแต่ละแท็บ (ว่าง) ที่โหลดเนื้อหาจากไฟล์ย่อยตอน runtime |
-| `public/partials/login.html` | หน้าเข้าสู่ระบบของแอปพยาบาล |
-| `public/panels/*.html` | โครงแต่ละแท็บของแอปพยาบาล (`home`, `nurses`, `calendar`, `schedule`, `holidays`, `swap`, `leave`, `stats`, `settings`, `users`) |
-| `public/na/index.html` | **แอปผู้ช่วยพยาบาล (NA)** — แยกเป็นอีกแอปหนึ่ง มีล็อกอิน/ผู้ใช้/ข้อมูลของตัวเอง |
-| `public/na/partials/login.html` | หน้าเข้าสู่ระบบของแอป NA |
-| `public/na/panels/*.html` | โครงแต่ละแท็บของแอป NA (`home`, `calendar`, `swap`, `leave`, `stats`, `assistants`, `schedule`, `users`) |
-| `src/worker.js` | Cloudflare Worker — ตัวกลางคุยกับ Google Sheet โดยเก็บ token ไว้ฝั่งเซิร์ฟเวอร์ และกรอง key แยกให้ 2 endpoint (`/api/data`, `/api/na`) |
-| `apps_script_backend.gs` | โค้ด Google Apps Script — วางในชีต แล้ว Deploy เป็น Web App เพื่อทำหน้าที่ REST API อ่าน/เขียนแต่ละแท็บ |
-| `wrangler.toml` | คอนฟิก Cloudflare Worker (ไม่มีความลับ — ค่าลับทั้งหมดเป็น Secret) |
-
-> 🧩 **สถาปัตยกรรมหน้าเว็บ:** แต่ละแอปเก็บ CSS/JS ไว้ในไฟล์ `index.html` ของตัวเอง แต่ **โครงสร้าง HTML ของแต่ละส่วนแยกเป็นไฟล์ย่อย** — เมื่อเปิดแอป ฟังก์ชัน `loadPartials()` จะ `fetch` ไฟล์เหล่านี้ (ตาม attribute `data-src`) มาฉีดเข้า DOM ก่อนเริ่มทำงาน ไฟล์ย่อยถูกเสิร์ฟเป็น static asset ตามปกติ (ไม่ต้องมี build step)
-
-## ฟีเจอร์
-
-### แอปพยาบาล (`/`)
-- จัดการข้อมูลพยาบาล 4 รุ่น + เงื่อนไขวัน/กะที่ไม่สะดวก 8 รูปแบบ
-- จัดเวรอัตโนมัติตามกฎ (ทีมไม่ซ้ำรุ่น, รุ่น 4 = Pre-op, เฉลี่ยแต่ละกะ, ดึก On call, บ่ายวันนี้ไม่ต่อดึกวันถัดไป)
-- ปฏิทินรายเดือน + Export PDF/CSV/Excel + หน้าแรก "ตารางเวรของฉัน"
-- ระบบแลกเวร/ยกเวรพร้อมการอนุมัติ, สถิติรายบุคคล (รวมสถิติวันหยุด)
-- ระบบวันลา (ลากิจ/ลาป่วย/ลาพักร้อน) + แนะนำคนขึ้นแทนเมื่อลาป่วยทับเวร
-- เพิ่มเวรกำหนดเอง (ชื่อ/กะ/ช่วงวัน + สุ่มคนว่าง)
-- ผูกบัญชีผู้ใช้กับพยาบาลด้วยรหัส · ล็อกอิน username/password
-- 3 บทบาท: admin / approver / requester
-
-### แอปผู้ช่วยพยาบาล NA (`/na/`)
-- แยกจากระบบพยาบาลโดยสิ้นเชิง — มีระบบผู้ใช้/ล็อกอิน/ข้อมูลของตัวเอง
-- จัดการรายชื่อ NA + จัดเวรอัตโนมัติ (เช้า/บ่าย/ดึก + เช้าทำการ, เฉลี่ยเท่ากัน, เลี่ยงวันลา/วันไม่สะดวก, บ่าย→ไม่ต่อดึกวันถัดไป)
-- ปฏิทิน NA, หน้าแรก "เวรของฉัน", แลก/ยกเวร NA, วันลา NA, สถิติ NA
-- 2 บทบาท: **naadmin** (จัดการทั้งหมด) / **assistant** (ดูเวร/ลา/แลกเวรของตัวเอง)
-- บัญชีผู้ดูแลเริ่มต้น: `naadmin` / `naadmin123` — **เปลี่ยนรหัสผ่านหลังใช้งานครั้งแรก**
-
-> ⚠️ **หลังอัปเดตนี้ต้อง redeploy Apps Script** (`apps_script_backend.gs`) หนึ่งครั้ง เพราะเพิ่มตาราง `Assistants` / `NASchedule` / `NASwaps` / `NALeaves` / `NAUsers` — ก่อน redeploy แอปยังใช้งานได้จาก localStorage แต่ข้อมูลจะยังไม่ sync ขึ้น Google Sheet
->
-> 🔒 **การแยกข้อมูล:** แอป NA เรียกเฉพาะ `/api/na` และแอปพยาบาลเรียกเฉพาะ `/api/data` โดย Worker กรอง key ให้แต่ละฝั่งเห็นเฉพาะข้อมูลของตน (ฝั่ง NA ไม่ได้รับข้อมูลพยาบาลแม้แต่ระดับเครือข่าย และ NA เขียนได้เฉพาะข้อมูล NA) — วันหยุดพิเศษ (`customHolidays`) ใช้ร่วมกันแบบอ่านอย่างเดียว (ฝั่งพยาบาลเป็นผู้ตั้ง) เพื่อให้จัดเวร NA คำนวณวันหยุดได้ถูกต้อง
-
-## Secrets ที่ต้องตั้ง (Cloudflare)
-
-ค่าลับทั้งหมด **ไม่เก็บในไฟล์** แต่เก็บเป็น Secret บน Cloudflare — ตั้งครั้งเดียวแล้วอยู่ถาวร
-ทุกครั้งที่ deploy จะไม่ถูกลบ ตั้งได้ทาง Dashboard (Worker → Settings → Variables and Secrets)
-หรือ CLI:
+## พัฒนาในเครื่อง
 
 ```bash
-npx wrangler secret put APPS_SCRIPT_URL     # Web App URL (/exec) ของ Apps Script
-npx wrangler secret put APPS_SCRIPT_TOKEN   # ต้องตรงกับ SECRET_TOKEN ใน apps_script_backend.gs
+npm install
+npm run db:migrate:local
+npm run dev            # http://localhost:3000
+npm test               # vitest
+npm run typecheck
 ```
+
+ข้อมูลทดสอบในเครื่อง: `node scripts/migrate-from-sheet.mjs` แล้ว `npx wrangler d1 execute nawee-db --local --file scripts/data/seed.sql`
+
+> ⚠️ `scripts/data/` มีรหัสผ่านและเบอร์โทร — อยู่ใน `.gitignore` ห้าม commit
 
 ## Deploy
 
-### แบบ push-to-deploy (Workers Builds) — แนะนำ
-เชื่อม repo นี้กับ Worker ใน Cloudflare Dashboard:
-Worker → Settings → **Builds → Connect** → เลือก repo + branch `main`
-(Deploy command: `npx wrangler deploy`) — จากนั้นทุก `git push` จะ deploy อัตโนมัติ
+| ปลายทาง | Worker | D1 |
+|---|---|---|
+| preview (ทดสอบ) | `nawee-duty-schedule-preview` | `nawee-db-preview` |
+| production | `nawee-duty-schedule` | `nawee-db` |
 
-### แบบ manual
 ```bash
-npx wrangler deploy
+# preview — build ด้วย env preview แล้ว deploy ด้วย config ที่ build ได้ (ตรวจชื่อ worker ก่อนเสมอ)
+CLOUDFLARE_ENV=preview npx vinext build
+node -e "console.log(require('./dist/server/wrangler.json').name)"   # ต้องเป็น nawee-duty-schedule-preview
+npx wrangler deploy --config dist/server/wrangler.json
 ```
 
-## Google Apps Script (ฐานข้อมูล)
-1. เปิด Google Sheet → Extensions → Apps Script → วางโค้ดจาก `apps_script_backend.gs`
-2. ตั้งค่า `SECRET_TOKEN` เป็นรหัสลับของคุณเอง (ค่าเดียวกับ Secret `APPS_SCRIPT_TOKEN`)
-3. Deploy → Web app (Execute as: Me, Who has access: Anyone) → คัดลอก URL ไปตั้งเป็น `APPS_SCRIPT_URL`
+> ⚠️ `vinext-cloudflare deploy` จะ **build ใหม่เอง** — ถ้าไม่ได้ส่ง `--preview` จะไปลง production ทันที
+> สคริปต์ `npm run deploy` จึงถูกปิดไว้ ให้ใช้ `deploy:preview` / `deploy:production` ที่ระบุปลายทางชัดเจน
 
-## ⚠️ ความปลอดภัย
-- ห้าม commit ค่า secret ใดๆ (token, URL) ขึ้น repo — ใช้ Cloudflare Secret เท่านั้น
-- รหัสผ่านผู้ใช้ระบบเก็บแบบ plaintext ในชีต — เหมาะกับใช้งานภายในองค์กรเท่านั้น
+**Workers Builds:** repo นี้ต่อกับ Cloudflare Workers Builds ไว้ (push เข้า `main` = deploy production อัตโนมัติ)
+ก่อน merge ต้องแก้คำสั่งใน Dashboard → Worker → Settings → Builds เป็น build `npx vinext build` / deploy `npx wrangler deploy --config dist/server/wrangler.json`
+
+## สลับจากระบบเดิม (Google Sheet) มา D1
+
+1. แจ้งผู้ใช้หยุดแก้ข้อมูลในระบบเดิมชั่วคราว
+2. ดึง snapshot: `/api/data` → `scripts/data/nurse.json`, `/api/na` → `scripts/data/na.json`
+3. `node scripts/migrate-from-sheet.mjs` (ถ้าไม่มีบัญชี NA จะสร้าง `naadmin` พร้อมรหัสสุ่ม — ดูใน output)
+4. `npm run db:migrate:production` แล้ว `npx wrangler d1 execute nawee-db --remote --file scripts/data/seed.sql`
+5. ตั้งค่า Workers Builds (ด้านบน) → merge เข้า `main`
+6. ถ้ามีปัญหา: `npx wrangler rollback <version เดิม> --name nawee-duty-schedule` — ระบบเดิมยังอ่าน Google Sheet ได้ตามเดิม
