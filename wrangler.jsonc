@@ -11,6 +11,7 @@
     "binding": "ASSETS"
   },
   "observability": { "enabled": true },
+  // ฐานข้อมูลเว็บจริง
   "d1_databases": [
     {
       "binding": "DB",
@@ -18,21 +19,21 @@
       "database_id": "43940533-f515-464b-b8e9-532a63d12b85",
       "migrations_dir": "migrations"
     }
-  ],
-  // ค่าข้างบน (nawee-db) = เว็บจริง | env.preview (nawee-db-preview) = เว็บทดสอบ
-  // deploy preview: CLOUDFLARE_ENV=preview npx vinext build && npx wrangler deploy --config dist/server/wrangler.json
-  // ⚠️ ห้ามใช้ vinext-cloudflare deploy โดยไม่ใส่ --preview เพราะมันจะ build ใหม่แล้วลงเว็บจริง
-  "env": {
-    "preview": {
-      "name": "nawee-duty-schedule-preview",
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "nawee-db-preview",
-          "database_id": "c2b313b7-beae-45b4-a3fd-c8b2d546d91a",
-          "migrations_dir": "migrations"
-        }
-      ]
-    }
-  }
+  ]
+  // ปิดไว้: เว็บทดสอบ (preview) — ตอนนี้ทำงานที่เว็บจริงอย่างเดียว
+  // ถ้าจะเปิดใช้อีก: ใส่ comma หลัง d1_databases ด้านบน แล้วเอาคอมเมนต์ออก
+  // build: CLOUDFLARE_ENV=preview npx vinext build && npx wrangler deploy --config dist/server/wrangler.json
+  // "env": {
+  //   "preview": {
+  //     "name": "nawee-duty-schedule-preview",
+  //     "d1_databases": [
+  //       {
+  //         "binding": "DB",
+  //         "database_name": "nawee-db-preview",
+  //         "database_id": "c2b313b7-beae-45b4-a3fd-c8b2d546d91a",
+  //         "migrations_dir": "migrations"
+  //       }
+  //     ]
+  //   }
+  // }
 }

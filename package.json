@@ -40,11 +40,8 @@
     "start": "wrangler dev --config dist/server/wrangler.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "deploy": "node -e \"console.error('ระบุปลายทางให้ชัด: npm run deploy:preview หรือ npm run deploy:production'); process.exit(1)\"",
-    "deploy:preview": "vinext-cloudflare deploy --preview",
-    "deploy:production": "vinext-cloudflare deploy",
+    "deploy": "vinext build && wrangler deploy --config dist/server/wrangler.json",
     "db:migrate:local": "wrangler d1 migrations apply nawee-db --local",
-    "db:migrate:preview": "wrangler d1 migrations apply nawee-db-preview --remote --env preview",
-    "db:migrate:production": "wrangler d1 migrations apply nawee-db --remote"
+    "db:migrate": "wrangler d1 migrations apply nawee-db --remote"
   }
 }

@@ -43,31 +43,27 @@ npm run typecheck
 
 > ⚠️ `scripts/data/` มีรหัสผ่านและเบอร์โทร — อยู่ใน `.gitignore` ห้าม commit
 
-## Deploy
+## Deploy (เว็บจริงอย่างเดียว)
 
-| ปลายทาง | Worker | D1 |
-|---|---|---|
-| preview (ทดสอบ) | `nawee-duty-schedule-preview` | `nawee-db-preview` |
-| production | `nawee-duty-schedule` | `nawee-db` |
+| Worker | D1 |
+|---|---|
+| `nawee-duty-schedule` | `nawee-db` |
 
-```bash
-# preview — build ด้วย env preview แล้ว deploy ด้วย config ที่ build ได้ (ตรวจชื่อ worker ก่อนเสมอ)
-CLOUDFLARE_ENV=preview npx vinext build
-node -e "console.log(require('./dist/server/wrangler.json').name)"   # ต้องเป็น nawee-duty-schedule-preview
-npx wrangler deploy --config dist/server/wrangler.json
-```
+**อัตโนมัติ:** repo ต่อกับ Cloudflare Workers Builds — push เข้า `main` = deploy เว็บจริง
+ตั้งค่าใน Dashboard → Worker → Settings → Build:
+- Build command: `npx vinext build`
+- Deploy command: `npx wrangler deploy --config dist/server/wrangler.json`
+- Builds for non-production branches: ปิด (ไม่งั้นทุก branch จะได้ URL ที่ผูกกับฐานข้อมูลจริง)
 
-> ⚠️ `vinext-cloudflare deploy` จะ **build ใหม่เอง** — ถ้าไม่ได้ส่ง `--preview` จะไปลง production ทันที
-> สคริปต์ `npm run deploy` จึงถูกปิดไว้ ให้ใช้ `deploy:preview` / `deploy:production` ที่ระบุปลายทางชัดเจน
+**จากเครื่อง:** `npm run deploy` (บัญชี wrangler ต้องเป็นเจ้าของ account `c80895cd…` — ตรวจด้วย `npx wrangler whoami`)
 
-**Workers Builds:** repo นี้ต่อกับ Cloudflare Workers Builds ไว้ (push เข้า `main` = deploy production อัตโนมัติ)
-ก่อน merge ต้องแก้คำสั่งใน Dashboard → Worker → Settings → Builds เป็น build `npx vinext build` / deploy `npx wrangler deploy --config dist/server/wrangler.json`
+**แก้ schema:** เพิ่มไฟล์ใน `migrations/` แล้ว `npm run db:migrate`
 
-## สลับจากระบบเดิม (Google Sheet) มา D1
+**ย้อนเวอร์ชันโค้ด:** `npx wrangler deployments list` แล้ว `npx wrangler rollback <version> --name nawee-duty-schedule`
 
-1. แจ้งผู้ใช้หยุดแก้ข้อมูลในระบบเดิมชั่วคราว
-2. ดึง snapshot: `/api/data` → `scripts/data/nurse.json`, `/api/na` → `scripts/data/na.json`
-3. `node scripts/migrate-from-sheet.mjs` (ถ้าไม่มีบัญชี NA จะสร้าง `naadmin` พร้อมรหัสสุ่ม — ดูใน output)
-4. `npm run db:migrate:production` แล้ว `npx wrangler d1 execute nawee-db --remote --file scripts/data/seed.sql`
-5. ตั้งค่า Workers Builds (ด้านบน) → merge เข้า `main`
-6. ถ้ามีปัญหา: `npx wrangler rollback <version เดิม> --name nawee-duty-schedule` — ระบบเดิมยังอ่าน Google Sheet ได้ตามเดิม
+> เว็บทดสอบ (preview) ปิดไว้ใน `wrangler.jsonc` — ดูวิธีเปิดกลับได้ในคอมเมนต์ของไฟล์
+
+## ประวัติการย้ายระบบ
+
+ย้ายจาก Google Sheet มา D1 เมื่อ 14 ก.ย. 2569 ด้วย `scripts/migrate-from-sheet.mjs`
+(ถ้าในชีตไม่มีบัญชี NA สคริปต์จะสร้าง `naadmin` พร้อมรหัสสุ่ม) — Google Sheet/Apps Script เดิมเก็บไว้เป็นไฟล์สำรองเท่านั้น
