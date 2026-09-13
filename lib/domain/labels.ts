@@ -1,0 +1,21 @@
+/** ชื่อฟิลด์ภาษาไทย ใช้ในข้อความ Log และหน้ารายละเอียด Log */
+export const FIELD_LABELS: Record<string, string> = {
+  code: "รหัส",
+  name: "ชื่อ",
+  generation: "รุ่น",
+  phone: "เบอร์โทร",
+  unavailableDates: "วันไม่สะดวก",
+  unavailableWeekdays: "วันในสัปดาห์ที่ไม่สะดวก",
+  unavailableShifts: "กะที่ไม่สะดวก",
+  unavailableWeeks: "สัปดาห์ที่ไม่สะดวก",
+  unavailableMonths: "เดือนที่ไม่สะดวก",
+  unavailableShiftsInWeeks: "กะไม่สะดวกรายสัปดาห์",
+  unavailableShiftsInMonths: "กะไม่สะดวกรายเดือน",
+  unavailableHolidays: "วันหยุดที่ไม่สะดวก",
+  fixedShifts: "Fix เวร",
+  fullname: "ชื่อ-นามสกุล",
+  role: "บทบาท",
+  nurseCode: "พยาบาลที่ผูก",
+  assistantCode: "ผู้ช่วยที่ผูก",
+  status: "สถานะ",
+};

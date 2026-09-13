@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "@fontsource/sarabun/400.css";
+@import "@fontsource/sarabun/500.css";
+@import "@fontsource/sarabun/600.css";
+@import "@fontsource/sarabun/700.css";
+
+/*
+ * Design tokens
+ * - brand: teal (ระบบพยาบาล) — แอป NA สลับเป็นเขียวด้วย .theme-na
+ * - สีกะใช้เหมือนกันทั้งระบบ: เช้า=amber, บ่าย=blue, ดึก=slate, Pre-op=violet, เวรกำหนดเอง=fuchsia, ลา=orange
+ */
+@theme {
+  --font-sans: "Sarabun", "Segoe UI", system-ui, sans-serif;
+
+  --color-brand-50: #effcf9;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+
+  --color-ink: #132a2e;
+  --color-ink-soft: #4b5d66;
+  --color-ink-mute: #7f919a;
+  --color-line: #e3ebe8;
+  --color-surface: #ffffff;
+  --color-canvas: #f3f7f6;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(13 60 53 / 0.05), 0 2px 8px rgb(13 60 53 / 0.04);
+  --shadow-pop: 0 18px 48px rgb(13 60 53 / 0.18);
+
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-slide-up: slide-up 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+  --animate-slide-left: slide-left 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-left {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+}
+
+.theme-na {
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-200: #bbf7d0;
+  --color-brand-300: #86efac;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --color-brand-900: #14532d;
+}
+
+:root {
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* iOS ซูมเองเมื่อ input ต่ำกว่า 16px — บังคับ 16px บนจอเล็ก */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+::selection {
+  background: var(--color-brand-100);
+  color: var(--color-brand-900);
+}
+
+/* พื้นที่ปลอดภัยของ iPhone (รอยบาก/แถบ home) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

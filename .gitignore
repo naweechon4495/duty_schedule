@@ -1,5 +1,16 @@
 # Cloudflare / Wrangler
 .wrangler/
+.dev.vars*
+
+# vinext / Next.js build output
+.next/
+next-env.d.ts
+/dist/
+.vinext/
+.env*
+
+# Data snapshots (มีรหัสผ่าน/เบอร์โทร — ห้าม commit)
+scripts/data/
 
 # Local tooling / editor
 .claude/
