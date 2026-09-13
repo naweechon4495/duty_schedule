@@ -179,7 +179,7 @@ export default function HomePage() {
                 return target ? (
                   <PersonCell ds={ds} personId={target.id} leave={leaveOn(target.id, date)} workday={!cal.isOffDay(date)} />
                 ) : (
-                  <AllCell ds={ds} nurseById={nurseById} />
+                  <AllCell mode="names" ds={ds} nurseById={nurseById} />
                 );
               }}
             />

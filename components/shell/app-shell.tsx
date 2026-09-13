@@ -176,8 +176,8 @@ export function AppShell({ title, subtitle, logo, nav, user, onLogout, basePath 
         <UserMenu user={user} onLogout={onLogout} compact />
       </header>
 
-      <main className="md:pl-20 lg:pl-64">
-        <div className="mx-auto w-full max-w-7xl px-3 pt-4 pb-28 sm:px-5 md:px-6 md:pt-6 md:pb-10">{children}</div>
+      <main className="md:pl-20 lg:pl-64 print:pl-0">
+        <div className="mx-auto w-full max-w-7xl px-3 pt-4 pb-28 sm:px-5 md:px-6 md:pt-6 md:pb-10 print:max-w-none print:p-0">{children}</div>
       </main>
 
       {/* ===== Mobile bottom nav ===== */}

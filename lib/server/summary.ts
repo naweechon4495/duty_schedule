@@ -1,27 +1,9 @@
 import { dateTH } from "../domain/dates";
 import { SHIFT_LABELS, shiftLabelOf } from "../domain/schedule";
 
+import { FIELD_LABELS } from "../domain/labels";
+
 /** ข้อความสรุปภาษาไทยสำหรับหน้า Log */
-export const FIELD_LABELS: Record<string, string> = {
-  code: "รหัส",
-  name: "ชื่อ",
-  generation: "รุ่น",
-  phone: "เบอร์โทร",
-  unavailableDates: "วันไม่สะดวก",
-  unavailableWeekdays: "วันในสัปดาห์ที่ไม่สะดวก",
-  unavailableShifts: "กะที่ไม่สะดวก",
-  unavailableWeeks: "สัปดาห์ที่ไม่สะดวก",
-  unavailableMonths: "เดือนที่ไม่สะดวก",
-  unavailableShiftsInWeeks: "กะไม่สะดวกรายสัปดาห์",
-  unavailableShiftsInMonths: "กะไม่สะดวกรายเดือน",
-  unavailableHolidays: "วันหยุดที่ไม่สะดวก",
-  fixedShifts: "Fix เวร",
-  fullname: "ชื่อ-นามสกุล",
-  role: "บทบาท",
-  nurseCode: "พยาบาลที่ผูก",
-  assistantCode: "ผู้ช่วยที่ผูก",
-  status: "สถานะ",
-};
 
 const short = (v: unknown) => {
   if (Array.isArray(v)) return v.length + " รายการ";
