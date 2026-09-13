@@ -1848,16 +1848,16 @@ function autoSchedule(){
     // จำนวนวันที่ลงดึกติดกันจนถึงเมื่อวาน
     const nightStreak=(id)=>{let s=0;while(s<MAX_NIGHT_STREAK){const ds=schedDaysAgo(s+1);if(ds&&(ds.night||[]).includes(id))s++;else break}return s};
     // ความเหมาะสมในการลงดึกวันนี้ (น้อย = เหมาะกว่า)
-    // ❌ เมื่อวานหยุด (ไม่มีเวร) → ห้ามลงดึกเด็ดขาด (nightRank = null) — ถ้าไม่มีข้อมูลเมื่อวานเลยจะไม่ตัดใคร
-    // 0 ต่อบล็อกดึกจากเมื่อวาน | 1 เมื่อวานมีเวรอื่นที่ไม่ใช่บ่าย | 2 บ่ายเมื่อวาน (บ่ายควบดึก) | 3 ดึกติดครบ MAX_NIGHT_STREAK แล้ว
+    // ❌ บ่ายเมื่อวาน → ห้ามลงดึกวันนี้เด็ดขาด (ห้ามบ่ายควบดึก, nightRank = null)
+    // 0 ต่อบล็อกดึกจากเมื่อวาน | 1 เมื่อวานมีเวรอื่น | 2 เมื่อวานหยุด | 3 บ่ายเมื่อวานซืน+หยุดเมื่อวาน | 4 ดึกติดครบ MAX_NIGHT_STREAK แล้ว
     const nightRank={};
     nurses.forEach(n=>{
       const st=nightStreak(n.id);
-      if(prevSched&&!nurseHasAnyShift(prevSched,n.id))nightRank[n.id]=null;
-      else if(st>=MAX_NIGHT_STREAK)nightRank[n.id]=3;
+      if(prevAfternoon.has(n.id))nightRank[n.id]=null;
+      else if(st>=MAX_NIGHT_STREAK)nightRank[n.id]=4;
       else if(st>0)nightRank[n.id]=0;
-      else if(prevAfternoon.has(n.id))nightRank[n.id]=2;
-      else nightRank[n.id]=1;
+      else if(prevSched&&nurseHasAnyShift(prevSched,n.id))nightRank[n.id]=1;
+      else nightRank[n.id]=prev2Afternoon.has(n.id)?3:2;
     });
 
     const unavailableShifts={};
@@ -1932,7 +1932,7 @@ function autoSchedule(){
 
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
-    // ตัดคนที่เมื่อวานหยุดออก แล้วเรียงตามความเหมาะสมลงดึก (nightRank) คงลำดับภาระงาน cmpBy เดิม (sort เสถียร)
+    // ตัดคนที่บ่ายเมื่อวานออก แล้วเรียงตามความเหมาะสมลงดึก (nightRank) คงลำดับภาระงาน cmpBy เดิม (sort เสถียร)
     ['1','2','3'].forEach(g=>{nightPool[g]=nightPool[g].filter(n=>nightRank[n.id]!==null).sort((a,b)=>nightRank[a.id]-nightRank[b.id])});
     const nightTeam=[...fixedByShift.night]; // คน fix กะดึกมาก่อน
     ['1','2','3'].forEach(g=>{
@@ -1942,7 +1942,7 @@ function autoSchedule(){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
       remaining.sort((a,b)=>(nightRank[a.id]-nightRank[b.id])||cmpBy('night')(a,b));
       while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
-      if(nightTeam.length<3)warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': กะดึกได้ '+nightTeam.length+'/3 คน (คนที่เหลือเมื่อวานหยุด/ไม่ว่าง)');
+      if(nightTeam.length<3)warnings.push(d+' '+MONTH_SHORT_TH[m-1]+': กะดึกได้ '+nightTeam.length+'/3 คน (คนที่เหลือบ่ายเมื่อวาน/ไม่ว่าง)');
     }
     nightTeam.forEach(n=>{daySched.night.push(n.id);assign(n,'night')});
     // สุ่ม 1 ใน 3 คนของกะดึกให้เป็น "ดึก On call" ของกะนั้น
