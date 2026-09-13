@@ -19,7 +19,9 @@
       "migrations_dir": "migrations"
     }
   ],
-  // ทดสอบก่อนสลับระบบจริง: CLOUDFLARE_ENV=preview npm run build && npm run deploy
+  // ค่าข้างบน (nawee-db) = เว็บจริง | env.preview (nawee-db-preview) = เว็บทดสอบ
+  // deploy preview: CLOUDFLARE_ENV=preview npx vinext build && npx wrangler deploy --config dist/server/wrangler.json
+  // ⚠️ ห้ามใช้ vinext-cloudflare deploy โดยไม่ใส่ --preview เพราะมันจะ build ใหม่แล้วลงเว็บจริง
   "env": {
     "preview": {
       "name": "nawee-duty-schedule-preview",
