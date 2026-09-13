@@ -1775,18 +1775,20 @@ function autoSchedule(){
   const daysInMonth=new Date(y,m,0).getDate();
   const monthSched={};
   
-  // นับภาระงานสะสม: total = รวมทุกกะ, byType = แยกตามชนิดกะ+ทีม (เช้า1/เช้า2/บ่าย1/บ่าย2) เพื่อเฉลี่ยแต่ละทีมให้เท่ากัน
+  // นับภาระงาน "ของเดือนที่กำลังจัด" เท่านั้น: total = รวมทุกกะ, byType = แยกตามชนิดกะ+ทีม (เช้า1/เช้า2/บ่าย1/บ่าย2)
+  // (ไม่นับเวรเดิมของเดือนนี้ — กดจัดซ้ำจะได้ไม่สลับหนัก/เบา และคนที่เดือนก่อนไม่ว่างจะไม่โดนเวรถล่มชดเชย)
+  // ประวัติเดือนก่อน ๆ ใช้แค่ตัดสินกรณีเสมอกัน
   const shiftTypeKey=(st)=>st.indexOf('preop')===0?'preop':st;
+  const MAX_NIGHT_STREAK=2; // ดึกติดกันได้ไม่เกินกี่วัน แล้วต้องเว้น
   const totalShifts={};
   const typeShifts={};
-  nurses.forEach(n=>{totalShifts[n.id]=0;typeShifts[n.id]={morning1:0,morning2:0,afternoon1:0,afternoon2:0,night:0,preop:0}});
-  const seedDay=(ds)=>{
-    (ds.morning||[]).forEach((id,i)=>{if(typeShifts[id]){typeShifts[id][i<3?'morning1':'morning2']++;totalShifts[id]++}});
-    (ds.afternoon||[]).forEach((id,i)=>{if(typeShifts[id]){typeShifts[id][i<3?'afternoon1':'afternoon2']++;totalShifts[id]++}});
-    ['night','preop','preop_morning','preop_afternoon'].forEach(k=>{(ds[k]||[]).forEach(id=>{if(typeShifts[id]){typeShifts[id][shiftTypeKey(k)]++;totalShifts[id]++}})});
-  };
-  Object.values(schedule).forEach(ms=>{Object.values(ms).forEach(seedDay)});
-  const staffMornTotal=(id)=>typeShifts[id].morning1+typeShifts[id].morning2; // เวรเช้ารวมของ staff (คุมโควตา 3/เดือน)
+  const histShifts={};
+  nurses.forEach(n=>{totalShifts[n.id]=0;histShifts[n.id]=0;typeShifts[n.id]={morning1:0,morning2:0,afternoon1:0,afternoon2:0,night:0,preop:0}});
+  Object.keys(schedule).forEach(mk=>{
+    if(mk>=month)return;
+    Object.values(schedule[mk]).forEach(ds=>{STD_SHIFTS.forEach(k=>{(ds[k]||[]).forEach(id=>{if(histShifts[id]!==undefined)histShifts[id]++})})});
+  });
+  const staffMornTotal=(id)=>typeShifts[id].morning1+typeShifts[id].morning2; // เวรเช้าของ staff ในเดือนนี้ (คุมโควตา 3/เดือน)
   // ลาพักร้อน: ลดโควตาเวร 1 เวร ต่อการลาพักร้อน 3 วัน (handicap = floor(วันลา/3))
   // เวรที่ลดจะถูกเฉลี่ยให้คนอื่นเองโดยกลไก balancing (คนลาพักร้อนถูกจัดทีหลัง)
   const vacHandicap={};nurses.forEach(n=>vacHandicap[n.id]=0);
@@ -1831,21 +1833,32 @@ function autoSchedule(){
       });
     });
     Object.values(fixedByShift).forEach(arr=>arr.forEach(n=>unavailable.add(n.id))); // กันจากพูลอัตโนมัติทุกกะ
-    // คนที่อยู่เวรบ่ายเมื่อวาน ไม่ควรถูกจัดเวรดึกวันนี้ (soft constraint)
-    const pd=new Date(y,m-1,d-1);
-    const pKey=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
-    const prevDateStr=fmtLocal(pd);
-    const prevIsOff=isOffDay(prevDateStr);
-    const prevSched=(pKey===month)?monthSched[pd.getDate()]:(schedule[pKey]&&schedule[pKey][pd.getDate()]);
+    // ตารางของวันก่อนหน้า k วัน (ในเดือนนี้ใช้ที่เพิ่งจัด, ข้ามเดือนใช้ตารางเดิม)
+    const schedDaysAgo=(k)=>{
+      const pd=new Date(y,m-1,d-k);
+      const pk=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+      return (pk===month)?monthSched[pd.getDate()]:(schedule[pk]&&schedule[pk][pd.getDate()]);
+    };
+    const prevIsOff=isOffDay(fmtLocal(new Date(y,m-1,d-1)));
+    const prevSched=schedDaysAgo(1);
     const prevAfternoon=new Set(prevSched?(prevSched.afternoon||[]):[]);
     // เมื่อวานซืน (D-2): ใช้กับกติกา "ห้ามบ่าย 3 วันติด"
-    const pd2=new Date(y,m-1,d-2);
-    const pKey2=pd2.getFullYear()+'-'+String(pd2.getMonth()+1).padStart(2,'0');
-    const prevSched2=(pKey2===month)?monthSched[pd2.getDate()]:(schedule[pKey2]&&schedule[pKey2][pd2.getDate()]);
+    const prevSched2=schedDaysAgo(2);
     const prev2Afternoon=new Set(prevSched2?(prevSched2.afternoon||[]):[]);
-    // หลบกะดึกแบบ soft: (1) บ่ายเมื่อวาน → ไม่ควรดึกวันนี้  (2) เมื่อวานหยุด/ไม่มีเวรเลย → ไม่ควรดึกวันนี้
-    const nightAvoid=new Set(prevAfternoon);
-    nurses.forEach(n=>{if(!(prevSched&&nurseHasAnyShift(prevSched,n.id)))nightAvoid.add(n.id)});
+    // จำนวนวันที่ลงดึกติดกันจนถึงเมื่อวาน
+    const nightStreak=(id)=>{let s=0;while(s<MAX_NIGHT_STREAK){const ds=schedDaysAgo(s+1);if(ds&&(ds.night||[]).includes(id))s++;else break}return s};
+    // ความเหมาะสมในการลงดึกวันนี้ (น้อย = เหมาะกว่า) — กติกาเป็นแบบ soft ยอมผ่อนเมื่อคนไม่พอ
+    // 0 ต่อบล็อกดึกจากเมื่อวาน | 1 เมื่อวานมีเวรอื่น (ไม่ขัดกติกา) | 2 เมื่อวานหยุด | 3 บ่ายเมื่อวานซืน+หยุดเมื่อวาน | 4 บ่ายเมื่อวาน | 5 ดึกติดครบ MAX_NIGHT_STREAK แล้ว
+    // (เดิมให้คนดึกเมื่อวานมาก่อนเสมอแบบไม่จำกัด → คนเดิมลงดึกติดกัน 6-8 วัน)
+    const nightRank={};
+    nurses.forEach(n=>{
+      const st=nightStreak(n.id);
+      if(st>=MAX_NIGHT_STREAK)nightRank[n.id]=5;
+      else if(st>0)nightRank[n.id]=0;
+      else if(prevAfternoon.has(n.id))nightRank[n.id]=4;
+      else if(prevSched&&nurseHasAnyShift(prevSched,n.id))nightRank[n.id]=1;
+      else nightRank[n.id]=prev2Afternoon.has(n.id)?3:2;
+    });
 
     const unavailableShifts={};
     nurses.forEach(n=>{
@@ -1877,9 +1890,10 @@ function autoSchedule(){
       }
     });
     
-    // เรียงคนน้อยเวรของ "กะชนิดนี้" ขึ้นก่อน แล้วค่อยดูภาระรวม เพื่อเฉลี่ยแต่ละกะให้เท่ากันต่อคน
-    // + บวก handicap ของคนลาพักร้อนที่ตัวนับรวม เพื่อให้ถูกจัดเวรน้อยลงตามสัดส่วนวันลา
-    const cmpBy=(tk)=>(a,b)=>((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||(((totalShifts[a.id]||0)+(vacHandicap[a.id]||0))-((totalShifts[b.id]||0)+(vacHandicap[b.id]||0)));
+    // เรียงคนที่ภาระรวมเดือนนี้น้อยสุดขึ้นก่อน (+handicap ลาพักร้อน) → เสมอกันดูจำนวนกะชนิดนี้/ทีมนี้ → เสมอกันดูประวัติเดือนก่อน
+    // (เดิมดูจำนวนกะชนิดนี้ก่อนภาระรวม → ยอดรวมต่อคนห่างกันมาก)
+    const load=(id)=>(totalShifts[id]||0)+(vacHandicap[id]||0);
+    const cmpBy=(tk)=>(a,b)=>(load(a.id)-load(b.id))||((typeShifts[a.id][tk]||0)-(typeShifts[b.id][tk]||0))||(histShifts[a.id]-histShifts[b.id]);
     const getAvailableByGen=(shiftType)=>{
       const tk=shiftTypeKey(shiftType);
       const byGen={'1':[],'2':[],'3':[],'4':[],'staff':[]};
@@ -1918,15 +1932,15 @@ function autoSchedule(){
 
     // กะดึก: 1 ทีม 3 คน (ไม่ซ้ำรุ่น) - เลือกจาก รุ่น 1,2,3
     const nightPool=getAvailableByGen('night');
-    // ดันคนที่อยู่เวรบ่ายเมื่อวานไปท้ายคิวแต่ละรุ่น (ยังเลือกได้ถ้าคนไม่พอ) — คงลำดับ cmpBy เดิม (sort เสถียร)
-    ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>(nightAvoid.has(a.id)?1:0)-(nightAvoid.has(b.id)?1:0))});
+    // เรียงตามความเหมาะสมลงดึก (nightRank) ก่อน แล้วคงลำดับภาระงาน cmpBy เดิม (sort เสถียร)
+    ['1','2','3'].forEach(g=>{nightPool[g].sort((a,b)=>nightRank[a.id]-nightRank[b.id])});
     const nightTeam=[...fixedByShift.night]; // คน fix กะดึกมาก่อน
     ['1','2','3'].forEach(g=>{
       if(nightTeam.length<3&&nightPool[g].length>0){const n=nightPool[g].shift();nightTeam.push(n)}
     });
     if(nightTeam.length<3){
       const remaining=[...nightPool['1'],...nightPool['2'],...nightPool['3']].filter(n=>!nightTeam.includes(n));
-      remaining.sort((a,b)=>((nightAvoid.has(a.id)?1:0)-(nightAvoid.has(b.id)?1:0))||cmpBy('night')(a,b));
+      remaining.sort((a,b)=>(nightRank[a.id]-nightRank[b.id])||cmpBy('night')(a,b));
       while(nightTeam.length<3&&remaining.length>0){nightTeam.push(remaining.shift())}
     }
     nightTeam.forEach(n=>{daySched.night.push(n.id);assign(n,'night')});
