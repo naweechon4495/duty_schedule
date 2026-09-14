@@ -2,9 +2,10 @@
 
 import { PhoneCall } from "lucide-react";
 import type { DaySchedule, Leave, Nurse } from "@/lib/types";
-import { SHIFT_DOT_CLASS, ShiftChip } from "@/components/ui/badge";
+import { SHIFT_DOT_CLASS, SHIFT_TONE_CLASS, ShiftChip } from "@/components/ui/badge";
 import { dayGroups, personDayShifts, shortName } from "@/lib/domain/display";
 import { LEAVE_TYPES } from "@/lib/domain/leave";
+import type { ShiftTone } from "@/lib/domain/schedule";
 import { cn } from "@/lib/utils";
 
 /** ช่องปฏิทินแบบรวมทุกคน: เดสก์ท็อปแสดงชื่อ, แท็บเล็ตแสดงจำนวนคนต่อกะ */
@@ -72,6 +73,31 @@ export function PersonCell({ ds, personId, leave, workday }: { ds: DaySchedule |
         ) : (
           <span className="text-[11px] font-semibold text-ink-mute">หยุด</span>
         ))}
+    </div>
+  );
+}
+
+function MiniChip({ tone, children }: { tone: ShiftTone; children: React.ReactNode }) {
+  return (
+    <span className={cn("flex items-center justify-center gap-px truncate rounded px-0.5 text-xs leading-4 font-semibold max-[359px]:text-[10px] [&_svg]:size-2.5 [&_svg]:shrink-0", SHIFT_TONE_CLASS[tone])}>
+      {children}
+    </span>
+  );
+}
+
+/** ช่องปฏิทินเดือนบนมือถือ (คนเดียว): ป้ายกะสั้น ๆ ซ้อนกันในช่องแคบ */
+export function PersonMiniCell({ ds, personId, leave }: { ds: DaySchedule | undefined; personId: string; leave?: Leave }) {
+  const shifts = personDayShifts(ds, personId);
+  if (!leave && !shifts.length) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      {leave && <MiniChip tone="leave">ลา</MiniChip>}
+      {shifts.map((s, i) => (
+        <MiniChip key={i} tone={s.tone}>
+          {s.short}
+          {s.oncall && <PhoneCall />}
+        </MiniChip>
+      ))}
     </div>
   );
 }

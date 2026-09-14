@@ -4,7 +4,7 @@ import { ArrowLeftRight, CalendarCheck2, ChevronRight, Palmtree, TriangleAlert, 
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Agenda } from "@/components/calendar/agenda";
-import { AllCell, PersonCell, ShiftLegend } from "@/components/calendar/cells";
+import { AllCell, PersonCell, PersonMiniCell, ShiftLegend } from "@/components/calendar/cells";
 import { DayDetail } from "@/components/calendar/day-detail";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { useNurseData } from "@/components/data/nurse-data";
@@ -104,7 +104,7 @@ export default function HomePage() {
           title={target ? (target.id === myNurse?.id ? "ตารางเวรของฉัน" : "ตารางเวรของ " + target.name) : "ตารางเวรรวม"}
           description={monthTitleTH(month)}
         />
-        <CardBody className="space-y-4">
+        <CardBody className="space-y-4 max-[359px]:px-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="sm:w-80">
               <Combobox items={personItems} value={person} onChange={setPerson} />
@@ -169,21 +169,30 @@ export default function HomePage() {
               cellClassName={(date) => (target && hasAnyShift(ms?.[Number(date.slice(8))], target.id) ? "bg-brand-50/70 border-brand-200" : undefined)}
             />
           </div>
-          <div className="md:hidden">
-            <Agenda
-              month={month}
-              cal={cal}
-              onSelect={setDetail}
-              renderDay={(date) => {
-                const ds = ms?.[Number(date.slice(8))];
-                return target ? (
-                  <PersonCell ds={ds} personId={target.id} leave={leaveOn(target.id, date)} workday={!cal.isOffDay(date)} />
-                ) : (
-                  <AllCell mode="names" ds={ds} nurseById={nurseById} />
-                );
-              }}
-            />
-          </div>
+          {/* มือถือ: คนเดียว = ปฏิทินเดือน, ตารางรวม = รายการทีละวันพร้อมรายชื่อ */}
+          {target ? (
+            <div className="space-y-2 md:hidden">
+              {!ms && <p className="rounded-xl bg-canvas px-3 py-2.5 text-sm text-ink-soft">เดือนนี้ยังไม่ได้จัดเวร</p>}
+              <MonthGrid
+                compact
+                month={month}
+                cal={cal}
+                onSelect={setDetail}
+                minCellHeight="min-h-14"
+                renderCell={(date) => <PersonMiniCell ds={ms?.[Number(date.slice(8))]} personId={target.id} leave={leaveOn(target.id, date)} />}
+              />
+              <p className="text-center text-xs text-ink-mute">กดที่วันเพื่อดูรายชื่อเวรทั้งหมดของวันนั้น</p>
+            </div>
+          ) : (
+            <div className="md:hidden">
+              <Agenda
+                month={month}
+                cal={cal}
+                onSelect={setDetail}
+                renderDay={(date) => <AllCell mode="names" ds={ms?.[Number(date.slice(8))]} nurseById={nurseById} />}
+              />
+            </div>
+          )}
         </CardBody>
       </Card>
 

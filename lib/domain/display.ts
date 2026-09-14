@@ -38,20 +38,31 @@ export function dayGroups(ds: DaySchedule | undefined, opts: { includeEmpty?: st
   return [...std, ...custom].filter((g) => g.ids.length > 0 || keep.has(g.slot));
 }
 
+export interface PersonShift {
+  label: string;
+  /** ป้ายสั้นสำหรับช่องปฏิทินบนมือถือ เช่น "บ่าย1" */
+  short: string;
+  tone: ShiftTone;
+  oncall?: boolean;
+}
+
 /** ป้ายกะของคนหนึ่งในวันหนึ่ง เช่น ["เช้า 1", "ดึก"] พร้อมโทนสี */
-export function personDayShifts(ds: DaySchedule | undefined, id: string): { label: string; tone: ShiftTone; oncall?: boolean }[] {
+export function personDayShifts(ds: DaySchedule | undefined, id: string): PersonShift[] {
   if (!ds) return [];
-  const out: { label: string; tone: ShiftTone; oncall?: boolean }[] = [];
+  const out: PersonShift[] = [];
   const mi = (ds.morning || []).indexOf(id);
-  if (mi >= 0) out.push({ label: mi < 3 ? "เช้า 1" : "เช้า 2", tone: "morning" });
+  if (mi >= 0) out.push(mi < 3 ? { label: "เช้า 1", short: "เช้า1", tone: "morning" } : { label: "เช้า 2", short: "เช้า2", tone: "morning" });
   const ai = (ds.afternoon || []).indexOf(id);
-  if (ai >= 0) out.push({ label: ai < 3 ? "บ่าย 1" : "บ่าย 2", tone: "afternoon" });
-  if ((ds.night || []).includes(id)) out.push({ label: "ดึก", tone: "night", oncall: (ds.night_oncall || []).includes(id) });
-  if ((ds.preop_morning || []).includes(id)) out.push({ label: "Pre-op เช้า", tone: "preop" });
-  if ((ds.preop_afternoon || []).includes(id)) out.push({ label: "Pre-op บ่าย", tone: "preop" });
-  if ((ds.preop || []).includes(id)) out.push({ label: "Pre-op", tone: "preop" });
+  if (ai >= 0) out.push(ai < 3 ? { label: "บ่าย 1", short: "บ่าย1", tone: "afternoon" } : { label: "บ่าย 2", short: "บ่าย2", tone: "afternoon" });
+  if ((ds.night || []).includes(id)) out.push({ label: "ดึก", short: "ดึก", tone: "night", oncall: (ds.night_oncall || []).includes(id) });
+  if ((ds.preop_morning || []).includes(id)) out.push({ label: "Pre-op เช้า", short: "Pช", tone: "preop" });
+  if ((ds.preop_afternoon || []).includes(id)) out.push({ label: "Pre-op บ่าย", short: "Pบ", tone: "preop" });
+  if ((ds.preop || []).includes(id)) out.push({ label: "Pre-op", short: "Pre", tone: "preop" });
   customKeysOf(ds).forEach((k) => {
-    if ((ds[k] || []).includes(id)) out.push({ label: parseCustom(k).name, tone: shiftTone(k) });
+    if ((ds[k] || []).includes(id)) {
+      const name = parseCustom(k).name;
+      out.push({ label: name, short: name.slice(0, 4), tone: shiftTone(k) });
+    }
   });
   return out;
 }
