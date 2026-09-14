@@ -86,9 +86,17 @@ function MiniChip({ tone, children }: { tone: ShiftTone; children: React.ReactNo
 }
 
 /** ช่องปฏิทินเดือนบนมือถือ (คนเดียว): ป้ายกะสั้น ๆ ซ้อนกันในช่องแคบ */
-export function PersonMiniCell({ ds, personId, leave }: { ds: DaySchedule | undefined; personId: string; leave?: Leave }) {
+export function PersonMiniCell({ ds, personId, leave, workday }: { ds: DaySchedule | undefined; personId: string; leave?: Leave; workday: boolean }) {
   const shifts = personDayShifts(ds, personId);
-  if (!leave && !shifts.length) return null;
+  if (!leave && !shifts.length) {
+    return workday ? (
+      <span className="block rounded border border-dashed border-line py-px text-center text-[10px] leading-3 text-ink-soft">
+        เช้า
+        <br />
+        ทำการ
+      </span>
+    ) : null;
+  }
   return (
     <div className="flex flex-col gap-0.5">
       {leave && <MiniChip tone="leave">ลา</MiniChip>}

@@ -179,7 +179,9 @@ export default function HomePage() {
                 cal={cal}
                 onSelect={setDetail}
                 minCellHeight="min-h-14"
-                renderCell={(date) => <PersonMiniCell ds={ms?.[Number(date.slice(8))]} personId={target.id} leave={leaveOn(target.id, date)} />}
+                renderCell={(date) => (
+                  <PersonMiniCell ds={ms?.[Number(date.slice(8))]} personId={target.id} leave={leaveOn(target.id, date)} workday={!cal.isOffDay(date)} />
+                )}
               />
               <p className="text-center text-xs text-ink-mute">กดที่วันเพื่อดูรายชื่อเวรทั้งหมดของวันนั้น</p>
             </div>
