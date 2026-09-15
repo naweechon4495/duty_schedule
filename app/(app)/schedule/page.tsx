@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNurseData } from "@/components/data/nurse-data";
 import { CustomShiftDialog } from "@/components/schedule/custom-shift-dialog";
 import { FairnessTable } from "@/components/schedule/fairness-table";
+import { SnapshotPanel } from "@/components/schedule/snapshot-panel";
 import { RequirePage } from "@/components/shell/nurse-shell";
 import { Button } from "@/components/ui/button";
 import { Alert, Card, CardBody, CardHeader, PageHeader } from "@/components/ui/card";
@@ -37,6 +38,7 @@ function ScheduleInner() {
   const [computing, setComputing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [snapKey, setSnapKey] = useState(0);
   const existing = schedule[month];
   const existingDays = existing ? Object.keys(existing).length : 0;
 
@@ -59,9 +61,12 @@ function ScheduleInner() {
     const ok = await confirmDialog({
       title: `บันทึกตาราง ${monthTitleTH(preview.month)}`,
       message: existingDays ? (
-        <Alert tone="warn" icon={<TriangleAlert />}>
-          เดือนนี้มีตารางอยู่แล้ว <b>{existingDays} วัน ({slotsOf(existing)} กะ-คน)</b> — จะถูก<b>เขียนทับทั้งหมด</b> รวมถึงที่แก้เองรายวัน เวรกำหนดเอง และการแลกเวรที่อนุมัติไปแล้ว
-        </Alert>
+        <>
+          <Alert tone="warn" icon={<TriangleAlert />}>
+            เดือนนี้มีตารางอยู่แล้ว <b>{existingDays} วัน ({slotsOf(existing)} กะ-คน)</b> — จะถูก<b>เขียนทับทั้งหมด</b> รวมถึงที่แก้เองรายวัน เวรกำหนดเอง และการแลกเวรที่อนุมัติไปแล้ว
+          </Alert>
+          <p className="text-sm">ตารางเดิมจะถูกสำรองไว้อัตโนมัติ กู้คืนได้ที่ส่วน “สำรองตารางเวร” ด้านล่าง</p>
+        </>
       ) : (
         <p>บันทึกตารางใหม่ {preview.totalAssigned} กะ-คน</p>
       ),
@@ -75,18 +80,23 @@ function ScheduleInner() {
       `บันทึกตาราง ${monthTitleTH(preview.month)} แล้ว`,
     );
     setSaving(false);
-    if (done) setPreview(null);
+    if (done) {
+      setPreview(null);
+      setSnapKey((k) => k + 1);
+    }
   };
 
   const clear = async () => {
     const ok = await confirmDialog({
       title: `ล้างตาราง ${monthTitleTH(month)}`,
-      message: <p>ตารางเวรทั้งเดือน ({existingDays} วัน) จะถูกลบ</p>,
+      message: <p>ตารางเวรทั้งเดือน ({existingDays} วัน) จะถูกลบ — ระบบสำรองไว้อัตโนมัติก่อน กู้คืนได้ที่ส่วน “สำรองตารางเวร”</p>,
       confirmText: "ล้างตาราง",
       tone: "danger",
       typeToConfirm: "ล้าง",
     });
-    if (ok) mutate(() => api(`/api/schedule/${month}`, { method: "DELETE" }), `ล้างตาราง ${monthTitleTH(month)} แล้ว`);
+    if (ok && (await mutate(() => api(`/api/schedule/${month}`, { method: "DELETE" }), `ล้างตาราง ${monthTitleTH(month)} แล้ว`))) {
+      setSnapKey((k) => k + 1);
+    }
   };
 
   const onMonth = (m: string) => {
@@ -124,7 +134,7 @@ function ScheduleInner() {
               <li><b>วันหยุด:</b> เช้า 2 ทีม + Pre-op เช้า / บ่าย 2 ทีม + Pre-op บ่าย / ดึก 1 ทีม</li>
               <li>ทีมละ 3 คนคนละรุ่น · รุ่น 4 = Pre-op · Staff ได้เช้าวันหยุด 3 เวร/เดือน</li>
               <li>เฉลี่ยจำนวนเวรรวมในเดือนให้เท่ากันภายในรุ่น แล้วเฉลี่ยทีม 1/ทีม 2</li>
-              <li><b>ห้ามบ่ายควบดึก</b> (บ่ายเมื่อวาน → ห้ามดึกวันนี้) · <b>ดึกติดกันไม่เกิน 2 วัน</b> · เมื่อวานหยุดลงดึกได้</li>
+              <li><b>ห้ามบ่ายควบดึก</b> (บ่ายเมื่อวาน → ห้ามดึกวันนี้) · <b>ดึกห้ามติดกัน</b> (ติดได้เฉพาะเมื่อคนไม่พอ พร้อมคำเตือน) · เมื่อวานหยุดลงดึกได้</li>
               <li>บ่ายห้ามติดกัน 3 วัน · วันธรรมดา ดึก/บ่ายไม่ใช่คนเดียวกัน · วันหยุด 1 คน 1 เวร</li>
               <li>เคารพวันไม่สะดวก, Fix เวร และวันลาที่อนุมัติแล้ว · ลาพักร้อนทุก 3 วัน ลดโควตา 1 เวร</li>
             </ul>
@@ -179,6 +189,8 @@ function ScheduleInner() {
           )}
         </CardBody>
       </Card>
+
+      <SnapshotPanel month={month} reloadKey={snapKey} />
 
       <Card>
         <CardHeader

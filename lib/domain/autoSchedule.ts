@@ -11,7 +11,7 @@ import { leaveDates } from "./leave";
  * - วันธรรมดา: บ่าย 2 ทีม (6 คน) + ดึก 1 ทีม (3 คน) + Pre-op 1 คน | วันหยุด: + เช้า 2 ทีม + Pre-op เช้า/บ่าย
  * - ทีมละ 3 คนคนละรุ่น, รุ่น 4 = Pre-op, Staff ได้เช้าวันหยุด 3 เวร/เดือน
  * - เฉลี่ยภาระรวมของเดือนนี้ก่อน → จำนวนกะชนิดนี้/ทีม → ประวัติเดือนก่อน
- * - ห้ามบ่ายควบดึก (บ่ายเมื่อวาน → ห้ามดึกวันนี้) เด็ดขาด, ดึกติดกันไม่เกิน 2 วัน, เมื่อวานหยุดลงดึกได้
+ * - ห้ามบ่ายควบดึก (บ่ายเมื่อวาน → ห้ามดึกวันนี้) เด็ดขาด, ดึกห้ามติดกัน (ติดได้เฉพาะคนไม่พอ + เตือน), เมื่อวานหยุดลงดึกได้
  * - บ่ายห้ามติด 3 วัน (ผ่อนได้ถ้าคนไม่พอ), วันธรรมดาดึก/บ่ายไม่ใช่คนเดียวกัน, วันหยุด 1 คน 1 เวร
  */
 export interface AutoScheduleInput {
@@ -31,7 +31,8 @@ export interface AutoScheduleResult {
   totalAssigned: number;
 }
 
-export const MAX_NIGHT_STREAK = 2;
+/** ลงดึกติดกันได้สูงสุดกี่วัน (1 = ห้ามติด) — เกินจากนี้ยังจัดได้เมื่อคนไม่พอ แต่จะมีคำเตือน */
+export const MAX_NIGHT_STREAK = 1;
 
 type TypeKey = "morning1" | "morning2" | "afternoon1" | "afternoon2" | "night" | "preop";
 
@@ -134,7 +135,7 @@ export function autoSchedule(input: AutoScheduleInput): AutoScheduleResult {
       return s;
     };
     // ความเหมาะสมลงดึก (น้อย = เหมาะกว่า); null = บ่ายเมื่อวาน ห้ามเด็ดขาด
-    // 0 ต่อบล็อกดึก | 1 เมื่อวานมีเวรอื่น | 2 เมื่อวานหยุด | 3 บ่ายเมื่อวานซืน+หยุดเมื่อวาน | 4 ดึกติดครบแล้ว
+    // 0 ต่อบล็อกดึก (ใช้เมื่อ MAX_NIGHT_STREAK > 1) | 1 เมื่อวานมีเวรอื่น | 2 เมื่อวานหยุด | 3 บ่ายเมื่อวานซืน+หยุดเมื่อวาน | 4 ดึกติดครบแล้ว (ใช้เมื่อคนไม่พอ)
     const nightRank: Record<string, number | null> = {};
     nurses.forEach((n) => {
       const st = nightStreak(n.id);
@@ -214,6 +215,14 @@ export function autoSchedule(input: AutoScheduleInput): AutoScheduleResult {
       while (nightTeam.length < 3 && remaining.length > 0) nightTeam.push(remaining.shift()!);
       if (nightTeam.length < 3) warnings.push(label(d) + ": กะดึกได้ " + nightTeam.length + "/3 คน (คนที่เหลือบ่ายเมื่อวาน/ไม่ว่าง)");
     }
+    const fixedNight = new Set(fixedByShift.night.map((n) => n.id));
+    nightTeam.forEach((n) => {
+      const why = fixedNight.has(n.id) ? "Fix เวรไว้" : "คนในรุ่นไม่พอ";
+      if (nightRank[n.id] === 4) warnings.push(label(d) + ": " + n.name + " ลงดึกติดกัน (" + why + ")");
+      else if (nightRank[n.id] === null) warnings.push(label(d) + ": " + n.name + " บ่ายควบดึก (" + why + ")");
+    });
+    const nightGens = nightTeam.map((n) => n.generation);
+    if (new Set(nightGens).size < nightGens.length) warnings.push(label(d) + ": ทีมดึกมีรุ่นซ้ำ (รุ่น " + nightGens.join(", ") + ")");
     nightTeam.forEach((n) => {
       daySched.night.push(n.id);
       assign(n, "night");
