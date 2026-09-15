@@ -8,6 +8,7 @@ import { listHolidays, listUsers } from "@/lib/server/repo/misc";
 import { insertNursesStmt, listNurses, sanitizeNurse } from "@/lib/server/repo/nurses";
 import { listLeaves, listSwaps } from "@/lib/server/repo/requests";
 import { loadSchedule, monthToRows } from "@/lib/server/repo/schedule";
+import { snapshotAllStmt } from "@/lib/server/repo/snapshots";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export const POST = route(async (req) => {
   const holidays = (data.holidays || data.customHolidays || []).map((h) => [h.date, h.name]);
 
   const stmts = [
+    // ตารางเวรทุกเดือนถูกแทนที่ → สำรองไว้ก่อน (ดู/กู้คืนได้ที่หน้าจัดเวร)
+    snapshotAllStmt("before_import", actor, "ตารางก่อน Import ข้อมูลสำรอง"),
     db().prepare("DELETE FROM nurses"),
     db().prepare("DELETE FROM schedule_slots"),
     db().prepare("DELETE FROM swaps"),

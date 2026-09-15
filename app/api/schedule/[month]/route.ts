@@ -5,6 +5,7 @@ import { db } from "@/lib/server/db";
 import { NURSE_PERMS, requireNurse } from "@/lib/server/guard";
 import { badRequest, isMonth, json, readJson, route } from "@/lib/server/http";
 import { countSlots, loadMonth, writeMonthStmts } from "@/lib/server/repo/schedule";
+import { pruneAutoStmt, snapshotStmt } from "@/lib/server/repo/snapshots";
 
 type Ctx = { params: Promise<{ month: string }> };
 
@@ -22,6 +23,9 @@ export const PUT = route<Ctx>(async (req, { params }) => {
   const before = await loadMonth(month);
   const warnings = (body.warnings || []).slice(0, 100).map(String);
   await db().batch([
+    // สำรองตารางเดิมไว้ก่อนเขียนทับ (อยู่ใน batch เดียวกัน)
+    snapshotStmt(month, "before_auto", actor, "ตารางก่อนกดจัดเวรอัตโนมัติ"),
+    pruneAutoStmt(month),
     ...writeMonthStmts(month, ms),
     auditStmt(actor, {
       action: "auto_schedule",
@@ -29,7 +33,7 @@ export const PUT = route<Ctx>(async (req, { params }) => {
       entityId: month,
       summary:
         `จัดเวรอัตโนมัติ ${monthTitleTH(month)} — ${countSlots(ms)} กะ-คน` +
-        (Object.keys(before).length ? ` (เขียนทับตารางเดิม ${countSlots(before)} กะ-คน)` : "") +
+        (Object.keys(before).length ? ` (เขียนทับตารางเดิม ${countSlots(before)} กะ-คน — สำรองไว้แล้ว)` : "") +
         (warnings.length ? `, คำเตือน ${warnings.length} รายการ` : ""),
       after: { slots: countSlots(ms), warnings },
       before: Object.keys(before).length ? { slots: countSlots(before) } : undefined,
@@ -44,12 +48,14 @@ export const DELETE = route<Ctx>(async (req, { params }) => {
   const actor = await requireNurse(req, NURSE_PERMS.runSchedule);
   const before = await loadMonth(month);
   await db().batch([
+    snapshotStmt(month, "before_clear", actor, "ตารางก่อนกดล้างตาราง"),
+    pruneAutoStmt(month),
     ...writeMonthStmts(month, {}).slice(0, 1),
     auditStmt(actor, {
       action: "clear",
       entity: "schedule",
       entityId: month,
-      summary: `ล้างตารางเวร ${monthTitleTH(month)} (${countSlots(before)} กะ-คน)`,
+      summary: `ล้างตารางเวร ${monthTitleTH(month)} (${countSlots(before)} กะ-คน — สำรองไว้แล้ว)`,
       before: { slots: countSlots(before) },
     }),
   ]);

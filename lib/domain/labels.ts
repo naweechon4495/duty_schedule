@@ -18,4 +18,8 @@ export const FIELD_LABELS: Record<string, string> = {
   nurseCode: "พยาบาลที่ผูก",
   assistantCode: "ผู้ช่วยที่ผูก",
   status: "สถานะ",
+  slots: "จำนวนกะ-คน",
+  warnings: "คำเตือน",
+  note: "หมายเหตุ",
+  snapshotId: "ข้อมูลสำรองชุดที่",
 };

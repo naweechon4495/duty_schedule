@@ -27,7 +27,7 @@ function cellCode(ds: Schedule[string][number] | undefined, id: string, workday:
 }
 
 /** Excel ตารางเวรแบบกริด (แถว = พยาบาล, คอลัมน์ = วันที่) ไฟล์ .xlsx จริง พร้อมสีวันหยุด */
-export async function exportScheduleMatrix(month: string, nurses: Nurse[], schedule: Schedule, cal: HolidayCalendar) {
+export async function exportScheduleMatrix(month: string, nurses: Nurse[], schedule: Schedule, cal: HolidayCalendar, filename = `ตารางเวร_${month}.xlsx`) {
   const ExcelJS = await loadExcelJS();
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("ตารางเวร", { views: [{ state: "frozen", xSplit: 2, ySplit: 3 }] });
@@ -89,7 +89,7 @@ export async function exportScheduleMatrix(month: string, nurses: Nurse[], sched
   ws.getColumn(1).width = 6;
   ws.getColumn(2).width = 28;
   for (let i = 3; i <= days + 2; i++) ws.getColumn(i).width = 5;
-  await saveWorkbook(wb, `ตารางเวร_${month}.xlsx`);
+  await saveWorkbook(wb, filename);
 }
 
 /** CSV รายวัน (เปิดใน Excel ภาษาไทยได้ถูกต้อง) */

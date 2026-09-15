@@ -50,6 +50,12 @@ export async function loadMonth(month: string, t: SlotTable = NURSE_SLOTS): Prom
   return rowsToSchedule(results)[month] || {};
 }
 
+/** แถว [day, shift, position, id] (เช่นจากข้อมูลสำรอง) → รูปแบบเดือน */
+export function rowsToMonth(rows: [number, string, number, string][]): MonthSchedule {
+  const sorted = rows.slice().sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]) || a[2] - b[2]);
+  return rowsToSchedule(sorted.map(([day, shift, position, person]) => ({ month: "m", day, shift, position, person })))["m"] || {};
+}
+
 /** แปลงเดือนเป็นรายการแถว [day, shift, position, id] (ข้ามรายการซ้ำในกะเดียวกัน) */
 export function monthToRows(ms: MonthSchedule): [number, string, number, string][] {
   const rows: [number, string, number, string][] = [];

@@ -3,6 +3,9 @@ import { dateStrOf } from "./dates";
 
 export const STD_SHIFTS = ["morning", "afternoon", "night", "preop", "preop_morning", "preop_afternoon"] as const;
 
+/** สำรองตารางอัตโนมัติ (ก่อนจัดเวร/ล้าง/กู้คืน/Import) เก็บล่าสุดกี่ชุดต่อเดือน */
+export const SNAPSHOT_AUTO_KEEP = 20;
+
 export const SHIFT_LABELS: Record<string, string> = {
   morning: "เช้า",
   afternoon: "บ่าย",

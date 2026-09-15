@@ -28,6 +28,7 @@ legacy/                 ระบบเดิม (HTML + Apps Script) เก็�
 - ทุกการแก้ไขเขียน `audit_log` ใน transaction เดียวกัน → ดูได้ที่หน้า **Log**
 - รหัสผ่านเก็บเป็น PBKDF2 hash, session เป็น cookie HttpOnly, API ไม่เคยส่งรหัสผ่าน/hash ออกไป
 - ตารางเวรเขียนทั้งเดือนด้วย 2 คำสั่ง (`DELETE` + `INSERT … json_each`) เพื่อไม่ชนเพดานจำนวน query ต่อ request
+- **สำรองตารางเวร** (`schedule_snapshots`, หน้าจัดเวร): ก่อนจัดเวรอัตโนมัติ / ล้าง / กู้คืน / Import ระบบสำรองเดือนนั้นไว้ใน batch เดียวกันเสมอ (เก็บอัตโนมัติล่าสุด 20 ชุดต่อเดือน) และกดบันทึกเองได้ — ดู, ดาวน์โหลด Excel, กู้คืนได้
 
 ## พัฒนาในเครื่อง
 
@@ -57,7 +58,7 @@ npm run typecheck
 
 **จากเครื่อง:** `npm run deploy` (บัญชี wrangler ต้องเป็นเจ้าของ account `c80895cd…` — ตรวจด้วย `npx wrangler whoami`)
 
-**แก้ schema:** เพิ่มไฟล์ใน `migrations/` แล้ว `npm run db:migrate`
+**แก้ schema:** เพิ่มไฟล์ใน `migrations/` แล้ว `npm run db:migrate` — **ต้องรันก่อน deploy โค้ดที่ใช้ตารางใหม่** (Workers Builds ไม่รัน migration ให้)
 
 **ย้อนเวอร์ชันโค้ด:** `npx wrangler deployments list` แล้ว `npx wrangler rollback <version> --name nawee-duty-schedule`
 

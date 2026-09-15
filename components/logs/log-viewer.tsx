@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  Archive,
+  ArchiveRestore,
   ArrowLeftRight,
   CalendarCog,
   Check,
@@ -46,6 +48,8 @@ export const ACTIONS: Record<string, { label: string; icon: LucideIcon; cls: str
   login_failed: { label: "รหัสผิด", icon: ShieldAlert, cls: "bg-amber-100 text-amber-900" },
   auto_schedule: { label: "จัดเวร", icon: WandSparkles, cls: "bg-brand-100 text-brand-800" },
   clear: { label: "ล้างตาราง", icon: RotateCcw, cls: "bg-rose-100 text-rose-800" },
+  snapshot: { label: "บันทึกสำรอง", icon: Archive, cls: "bg-teal-100 text-teal-800" },
+  restore: { label: "กู้คืนตาราง", icon: ArchiveRestore, cls: "bg-amber-100 text-amber-900" },
   import: { label: "นำเข้า", icon: Upload, cls: "bg-violet-100 text-violet-800" },
   export: { label: "ส่งออก", icon: Download, cls: "bg-slate-100 text-slate-700" },
   reset_password: { label: "ตั้งรหัสใหม่", icon: KeyRound, cls: "bg-amber-100 text-amber-900" },
@@ -55,6 +59,7 @@ const ENTITY_LABELS: Record<string, string> = {
   nurse: "พยาบาล",
   assistant: "ผู้ช่วยพยาบาล",
   schedule: "ตารางเวร",
+  schedule_snapshot: "สำรองตารางเวร",
   swap: "แลกเวร",
   leave: "วันลา",
   holiday: "วันหยุด",
@@ -63,7 +68,7 @@ const ENTITY_LABELS: Record<string, string> = {
   data: "ข้อมูลทั้งหมด",
 };
 
-const ENTITY_ICONS: Record<string, LucideIcon> = { swap: ArrowLeftRight, schedule: CalendarCog };
+const ENTITY_ICONS: Record<string, LucideIcon> = { swap: ArrowLeftRight, schedule: CalendarCog, schedule_snapshot: Archive };
 
 interface LogResponse {
   entries: AuditEntry[];

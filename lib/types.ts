@@ -155,6 +155,23 @@ export interface NABootstrapData {
   users: NAPublicUser[];
 }
 
+// ===================== สำรองตารางเวร =====================
+
+/** manual = บันทึกเอง | before_* = สำรองอัตโนมัติก่อนเขียนทับ | initial = ตอนติดตั้งระบบสำรอง */
+export type SnapshotKind = "manual" | "before_auto" | "before_clear" | "before_restore" | "before_import" | "initial";
+
+export interface ScheduleSnapshot {
+  id: number;
+  month: string;
+  kind: SnapshotKind;
+  note: string;
+  days: number;
+  slots: number;
+  createdAt: string;
+  createdBy: string;
+  createdByName: string;
+}
+
 // ===================== Audit log =====================
 
 export interface AuditEntry {

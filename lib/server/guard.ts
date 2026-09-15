@@ -58,4 +58,6 @@ export const NURSE_PERMS = {
   deleteRequests: ["admin"] as Role[],
   viewLogs: ["admin"] as Role[],
   backup: ["admin"] as Role[],
+  /** ดู/บันทึก/กู้คืนข้อมูลสำรองตารางเวร = คนที่จัดเวรได้, ลบข้อมูลสำรอง = แอดมิน */
+  deleteSnapshot: ["admin"] as Role[],
 };
